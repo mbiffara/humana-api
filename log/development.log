@@ -1,0 +1,409 @@
+  [1m[35mSQL (0.4ms)[0m  [1m[35mSET search_path TO public /*application='HumanaApi'*/[0m
+  [1m[35m (256.5ms)[0m  [1m[35mCREATE DATABASE "humana_api_development" ENCODING = 'unicode' /*application='HumanaApi'*/[0m
+  [1m[35mSQL (0.2ms)[0m  [1m[35mSET search_path TO public /*application='HumanaApi'*/[0m
+  [1m[35m (175.7ms)[0m  [1m[35mCREATE DATABASE "humana_api_test" ENCODING = 'unicode' /*application='HumanaApi'*/[0m
+  [1m[35m (23.2ms)[0m  [1m[35mCREATE TABLE "schema_migrations" ("version" character varying NOT NULL PRIMARY KEY) /*application='HumanaApi'*/[0m
+  [1m[35m (4.1ms)[0m  [1m[35mCREATE TABLE "ar_internal_metadata" ("key" character varying NOT NULL PRIMARY KEY, "value" character varying, "created_at" timestamp(6) NOT NULL, "updated_at" timestamp(6) NOT NULL) /*application='HumanaApi'*/[0m
+  [1m[35m (0.1ms)[0m  [1m[34mSELECT pg_try_advisory_lock(7787422043043845685) /*application='HumanaApi'*/[0m
+  [1m[36mActiveRecord::SchemaMigration Load (0.8ms)[0m  [1m[34mSELECT "schema_migrations"."version" FROM "schema_migrations" ORDER BY "schema_migrations"."version" ASC /*application='HumanaApi'*/[0m
+  [1m[36mActiveRecord::InternalMetadata Load (2.3ms)[0m  [1m[34mSELECT * FROM "ar_internal_metadata" WHERE "ar_internal_metadata"."key" = 'environment' ORDER BY "ar_internal_metadata"."key" ASC LIMIT 1 /*application='HumanaApi'*/[0m
+  [1m[36mActiveRecord::InternalMetadata Create (0.9ms)[0m  [1m[32mINSERT INTO "ar_internal_metadata" ("key", "value", "created_at", "updated_at") VALUES ('environment', 'development', '2026-06-02 20:18:00.205128', '2026-06-02 20:18:00.205130') RETURNING "key" /*application='HumanaApi'*/[0m
+Migrating to CreateOrganizations (20260602201700)
+  [1m[36mTRANSACTION (3.8ms)[0m  [1m[35mBEGIN /*application='HumanaApi'*/[0m
+  [1m[35m (10.1ms)[0m  [1m[35mCREATE TABLE "organizations" ("id" bigserial primary key, "name" character varying NOT NULL, "kind" character varying DEFAULT 'agency' NOT NULL, "status" character varying DEFAULT 'pending' NOT NULL, "city" character varying, "country" character varying, "country_code" character varying(2), "contact_email" character varying, "website" character varying, "created_at" timestamp(6) NOT NULL, "updated_at" timestamp(6) NOT NULL) /*application='HumanaApi'*/[0m
+  [1m[35m (2.6ms)[0m  [1m[35mCREATE INDEX "index_organizations_on_kind" ON "organizations" ("kind") /*application='HumanaApi'*/[0m
+  [1m[35m (26.0ms)[0m  [1m[35mCREATE INDEX "index_organizations_on_status" ON "organizations" ("status") /*application='HumanaApi'*/[0m
+  [1m[36mActiveRecord::SchemaMigration Create (14.0ms)[0m  [1m[32mINSERT INTO "schema_migrations" ("version") VALUES ('20260602201700') RETURNING "version" /*application='HumanaApi'*/[0m
+  [1m[36mTRANSACTION (36.3ms)[0m  [1m[35mCOMMIT /*application='HumanaApi'*/[0m
+Migrating to CreateUsers (20260602201701)
+  [1m[36mTRANSACTION (0.7ms)[0m  [1m[35mBEGIN /*application='HumanaApi'*/[0m
+  [1m[35m (56.7ms)[0m  [1m[35mCREATE TABLE "users" ("id" bigserial primary key, "organization_id" bigint NOT NULL, "email" character varying NOT NULL, "password_digest" character varying NOT NULL, "name" character varying, "role" character varying DEFAULT 'member' NOT NULL, "locale" character varying DEFAULT 'en' NOT NULL, "last_login_at" timestamp(6), "created_at" timestamp(6) NOT NULL, "updated_at" timestamp(6) NOT NULL, CONSTRAINT "fk_rails_d7b9ff90af"
+FOREIGN KEY ("organization_id")
+  REFERENCES "organizations" ("id")
+) /*application='HumanaApi'*/[0m
+  [1m[35m (1.1ms)[0m  [1m[35mCREATE INDEX "index_users_on_organization_id" ON "users" ("organization_id") /*application='HumanaApi'*/[0m
+  [1m[35m (1.7ms)[0m  [1m[35mCREATE UNIQUE INDEX "index_users_on_lower_email" ON "users" (lower(email)) /*application='HumanaApi'*/[0m
+  [1m[36mActiveRecord::SchemaMigration Create (0.2ms)[0m  [1m[32mINSERT INTO "schema_migrations" ("version") VALUES ('20260602201701') RETURNING "version" /*application='HumanaApi'*/[0m
+  [1m[36mTRANSACTION (0.5ms)[0m  [1m[35mCOMMIT /*application='HumanaApi'*/[0m
+Migrating to CreateHotels (20260602201702)
+  [1m[36mTRANSACTION (0.9ms)[0m  [1m[35mBEGIN /*application='HumanaApi'*/[0m
+  [1m[35m (4.0ms)[0m  [1m[35mCREATE TABLE "hotels" ("id" bigserial primary key, "organization_id" bigint NOT NULL, "name" character varying NOT NULL, "city" character varying, "country" character varying, "country_code" character varying(2), "latitude" decimal(9,6), "longitude" decimal(9,6), "certified" boolean DEFAULT FALSE NOT NULL, "wellness_standard" character varying, "description" text, "created_at" timestamp(6) NOT NULL, "updated_at" timestamp(6) NOT NULL, CONSTRAINT "fk_rails_fc2623fafb"
+FOREIGN KEY ("organization_id")
+  REFERENCES "organizations" ("id")
+) /*application='HumanaApi'*/[0m
+  [1m[35m (0.8ms)[0m  [1m[35mCREATE INDEX "index_hotels_on_organization_id" ON "hotels" ("organization_id") /*application='HumanaApi'*/[0m
+  [1m[35m (0.7ms)[0m  [1m[35mCREATE INDEX "index_hotels_on_country_code" ON "hotels" ("country_code") /*application='HumanaApi'*/[0m
+  [1m[36mActiveRecord::SchemaMigration Create (0.2ms)[0m  [1m[32mINSERT INTO "schema_migrations" ("version") VALUES ('20260602201702') RETURNING "version" /*application='HumanaApi'*/[0m
+  [1m[36mTRANSACTION (0.2ms)[0m  [1m[35mCOMMIT /*application='HumanaApi'*/[0m
+Migrating to CreateExperiences (20260602201703)
+  [1m[36mTRANSACTION (0.3ms)[0m  [1m[35mBEGIN /*application='HumanaApi'*/[0m
+  [1m[35m (4.4ms)[0m  [1m[35mCREATE TABLE "experiences" ("id" bigserial primary key, "hotel_id" bigint NOT NULL, "slug" character varying NOT NULL, "kind" character varying DEFAULT 'retreat' NOT NULL, "title" character varying NOT NULL, "description" text, "location" character varying, "country" character varying, "country_code" character varying(2), "starts_on" date, "ends_on" date, "price_cents" integer DEFAULT 0 NOT NULL, "currency" character varying DEFAULT 'USD' NOT NULL, "commission_rate" decimal(5,4) DEFAULT 0.0 NOT NULL, "capacity" integer, "image_url" character varying, "status" character varying DEFAULT 'draft' NOT NULL, "created_at" timestamp(6) NOT NULL, "updated_at" timestamp(6) NOT NULL, CONSTRAINT "fk_rails_8218fd0882"
+FOREIGN KEY ("hotel_id")
+  REFERENCES "hotels" ("id")
+) /*application='HumanaApi'*/[0m
+  [1m[35m (0.8ms)[0m  [1m[35mCREATE INDEX "index_experiences_on_hotel_id" ON "experiences" ("hotel_id") /*application='HumanaApi'*/[0m
+  [1m[35m (0.8ms)[0m  [1m[35mCREATE UNIQUE INDEX "index_experiences_on_slug" ON "experiences" ("slug") /*application='HumanaApi'*/[0m
+  [1m[35m (0.5ms)[0m  [1m[35mCREATE INDEX "index_experiences_on_kind" ON "experiences" ("kind") /*application='HumanaApi'*/[0m
+  [1m[35m (0.8ms)[0m  [1m[35mCREATE INDEX "index_experiences_on_status" ON "experiences" ("status") /*application='HumanaApi'*/[0m
+  [1m[35m (0.5ms)[0m  [1m[35mCREATE INDEX "index_experiences_on_country_code" ON "experiences" ("country_code") /*application='HumanaApi'*/[0m
+  [1m[36mActiveRecord::SchemaMigration Create (0.1ms)[0m  [1m[32mINSERT INTO "schema_migrations" ("version") VALUES ('20260602201703') RETURNING "version" /*application='HumanaApi'*/[0m
+  [1m[36mTRANSACTION (0.3ms)[0m  [1m[35mCOMMIT /*application='HumanaApi'*/[0m
+Migrating to CreateClients (20260602201704)
+  [1m[36mTRANSACTION (0.2ms)[0m  [1m[35mBEGIN /*application='HumanaApi'*/[0m
+  [1m[35m (5.0ms)[0m  [1m[35mCREATE TABLE "clients" ("id" bigserial primary key, "organization_id" bigint NOT NULL, "name" character varying NOT NULL, "email" character varying, "phone" character varying, "notes" text, "created_at" timestamp(6) NOT NULL, "updated_at" timestamp(6) NOT NULL, CONSTRAINT "fk_rails_e6ab7b7c9a"
+FOREIGN KEY ("organization_id")
+  REFERENCES "organizations" ("id")
+) /*application='HumanaApi'*/[0m
+  [1m[35m (0.7ms)[0m  [1m[35mCREATE INDEX "index_clients_on_organization_id" ON "clients" ("organization_id") /*application='HumanaApi'*/[0m
+  [1m[35m (0.5ms)[0m  [1m[35mCREATE INDEX "index_clients_on_organization_id_and_email" ON "clients" ("organization_id", "email") /*application='HumanaApi'*/[0m
+  [1m[36mActiveRecord::SchemaMigration Create (0.1ms)[0m  [1m[32mINSERT INTO "schema_migrations" ("version") VALUES ('20260602201704') RETURNING "version" /*application='HumanaApi'*/[0m
+  [1m[36mTRANSACTION (0.3ms)[0m  [1m[35mCOMMIT /*application='HumanaApi'*/[0m
+Migrating to CreateBookings (20260602201705)
+  [1m[36mTRANSACTION (0.2ms)[0m  [1m[35mBEGIN /*application='HumanaApi'*/[0m
+  [1m[35m (7.2ms)[0m  [1m[35mCREATE TABLE "bookings" ("id" bigserial primary key, "organization_id" bigint NOT NULL, "experience_id" bigint NOT NULL, "client_id" bigint, "reference" character varying NOT NULL, "guests" integer DEFAULT 1 NOT NULL, "starts_on" date, "ends_on" date, "status" character varying DEFAULT 'inquiry' NOT NULL, "amount_cents" integer DEFAULT 0 NOT NULL, "currency" character varying DEFAULT 'USD' NOT NULL, "commission_cents" integer DEFAULT 0 NOT NULL, "notes" text, "created_at" timestamp(6) NOT NULL, "updated_at" timestamp(6) NOT NULL, CONSTRAINT "fk_rails_2415b45902"
+FOREIGN KEY ("organization_id")
+  REFERENCES "organizations" ("id")
+, CONSTRAINT "fk_rails_287426d052"
+FOREIGN KEY ("experience_id")
+  REFERENCES "experiences" ("id")
+, CONSTRAINT "fk_rails_2c503ea743"
+FOREIGN KEY ("client_id")
+  REFERENCES "clients" ("id")
+) /*application='HumanaApi'*/[0m
+  [1m[35m (1.0ms)[0m  [1m[35mCREATE INDEX "index_bookings_on_organization_id" ON "bookings" ("organization_id") /*application='HumanaApi'*/[0m
+  [1m[35m (3.7ms)[0m  [1m[35mCREATE INDEX "index_bookings_on_experience_id" ON "bookings" ("experience_id") /*application='HumanaApi'*/[0m
+  [1m[35m (0.8ms)[0m  [1m[35mCREATE INDEX "index_bookings_on_client_id" ON "bookings" ("client_id") /*application='HumanaApi'*/[0m
+  [1m[35m (0.9ms)[0m  [1m[35mCREATE UNIQUE INDEX "index_bookings_on_reference" ON "bookings" ("reference") /*application='HumanaApi'*/[0m
+  [1m[35m (1.3ms)[0m  [1m[35mCREATE INDEX "index_bookings_on_status" ON "bookings" ("status") /*application='HumanaApi'*/[0m
+  [1m[36mActiveRecord::SchemaMigration Create (0.2ms)[0m  [1m[32mINSERT INTO "schema_migrations" ("version") VALUES ('20260602201705') RETURNING "version" /*application='HumanaApi'*/[0m
+  [1m[36mTRANSACTION (0.6ms)[0m  [1m[35mCOMMIT /*application='HumanaApi'*/[0m
+  [1m[35m (0.8ms)[0m  [1m[34mSELECT pg_advisory_unlock(7787422043043845685) /*application='HumanaApi'*/[0m
+  [1m[36mActiveRecord::SchemaMigration Load (0.6ms)[0m  [1m[34mSELECT "schema_migrations"."version" FROM "schema_migrations" ORDER BY "schema_migrations"."version" ASC /*application='HumanaApi'*/[0m
+  [1m[36mActiveRecord::SchemaMigration Load (0.6ms)[0m  [1m[34mSELECT "schema_migrations"."version" FROM "schema_migrations" ORDER BY "schema_migrations"."version" ASC /*application='HumanaApi'*/[0m
+  [1m[36mOrganization Load (4.1ms)[0m  [1m[34mSELECT "organizations".* FROM "organizations" WHERE "organizations"."name" = 'HUMANA Global' LIMIT 1 /*application='HumanaApi'*/[0m
+  [1m[36mTRANSACTION (0.1ms)[0m  [1m[35mBEGIN /*application='HumanaApi'*/[0m
+  [1m[36mOrganization Create (1.0ms)[0m  [1m[32mINSERT INTO "organizations" ("name", "kind", "status", "city", "country", "country_code", "contact_email", "website", "created_at", "updated_at") VALUES ('HUMANA Global', 'admin', 'verified', 'Madrid', 'Spain', 'ES', 'ops@humana.global', NULL, '2026-06-02 20:22:15.413746', '2026-06-02 20:22:15.413746') RETURNING "id" /*application='HumanaApi'*/[0m
+  [1m[36mTRANSACTION (0.5ms)[0m  [1m[35mCOMMIT /*application='HumanaApi'*/[0m
+  [1m[36mUser Load (1.5ms)[0m  [1m[34mSELECT "users".* FROM "users" WHERE "users"."email" = 'admin@humana.global' LIMIT 1 /*application='HumanaApi'*/[0m
+  [1m[36mTRANSACTION (0.7ms)[0m  [1m[35mBEGIN /*application='HumanaApi'*/[0m
+  [1m[36mUser Exists? (1.6ms)[0m  [1m[34mSELECT 1 AS one FROM "users" WHERE LOWER("users"."email") = LOWER('admin@humana.global') LIMIT 1 /*application='HumanaApi'*/[0m
+  [1m[36mUser Create (1.6ms)[0m  [1m[32mINSERT INTO "users" ("organization_id", "email", "password_digest", "name", "role", "locale", "last_login_at", "created_at", "updated_at") VALUES (1, 'admin@humana.global', '$2a$12$9wKbAR44gafVlJUYaVnKOekK8yaJwVLbVO5ZJQWBfj7LqALFoG9xi', 'HUMANA Operations', 'admin', 'en', NULL, '2026-06-02 20:22:15.619680', '2026-06-02 20:22:15.619680') RETURNING "id" /*application='HumanaApi'*/[0m
+  [1m[36mTRANSACTION (0.1ms)[0m  [1m[35mCOMMIT /*application='HumanaApi'*/[0m
+  [1m[36mOrganization Load (0.1ms)[0m  [1m[34mSELECT "organizations".* FROM "organizations" WHERE "organizations"."name" = 'Viajes Éter' LIMIT 1 /*application='HumanaApi'*/[0m
+  [1m[36mTRANSACTION (0.1ms)[0m  [1m[35mBEGIN /*application='HumanaApi'*/[0m
+  [1m[36mOrganization Create (0.5ms)[0m  [1m[32mINSERT INTO "organizations" ("name", "kind", "status", "city", "country", "country_code", "contact_email", "website", "created_at", "updated_at") VALUES ('Viajes Éter', 'agency', 'verified', 'Madrid', 'Spain', 'ES', 'hola@viajeseter.com', 'https://viajeseter.com', '2026-06-02 20:22:15.623390', '2026-06-02 20:22:15.623390') RETURNING "id" /*application='HumanaApi'*/[0m
+  [1m[36mTRANSACTION (0.1ms)[0m  [1m[35mCOMMIT /*application='HumanaApi'*/[0m
+  [1m[36mUser Load (0.1ms)[0m  [1m[34mSELECT "users".* FROM "users" WHERE "users"."email" = 'agent@viajeseter.com' LIMIT 1 /*application='HumanaApi'*/[0m
+  [1m[36mTRANSACTION (0.8ms)[0m  [1m[35mBEGIN /*application='HumanaApi'*/[0m
+  [1m[36mUser Exists? (1.7ms)[0m  [1m[34mSELECT 1 AS one FROM "users" WHERE LOWER("users"."email") = LOWER('agent@viajeseter.com') LIMIT 1 /*application='HumanaApi'*/[0m
+  [1m[36mUser Create (0.3ms)[0m  [1m[32mINSERT INTO "users" ("organization_id", "email", "password_digest", "name", "role", "locale", "last_login_at", "created_at", "updated_at") VALUES (2, 'agent@viajeseter.com', '$2a$12$XwUCV6rUDTSUMZI8pduWTuWa3cnfTzZPXxrGwI/yxSvC0p5G7E.E.', 'Valentina Esposito', 'owner', 'es', NULL, '2026-06-02 20:22:15.803436', '2026-06-02 20:22:15.803436') RETURNING "id" /*application='HumanaApi'*/[0m
+  [1m[36mTRANSACTION (0.2ms)[0m  [1m[35mCOMMIT /*application='HumanaApi'*/[0m
+  [1m[36mOrganization Load (0.2ms)[0m  [1m[34mSELECT "organizations".* FROM "organizations" WHERE "organizations"."name" = 'Casa del Faro Collection' LIMIT 1 /*application='HumanaApi'*/[0m
+  [1m[36mTRANSACTION (0.0ms)[0m  [1m[35mBEGIN /*application='HumanaApi'*/[0m
+  [1m[36mOrganization Create (0.5ms)[0m  [1m[32mINSERT INTO "organizations" ("name", "kind", "status", "city", "country", "country_code", "contact_email", "website", "created_at", "updated_at") VALUES ('Casa del Faro Collection', 'hotel', 'verified', 'Ibiza', 'Spain', 'ES', NULL, NULL, '2026-06-02 20:22:15.805108', '2026-06-02 20:22:15.805108') RETURNING "id" /*application='HumanaApi'*/[0m
+  [1m[36mTRANSACTION (0.1ms)[0m  [1m[35mCOMMIT /*application='HumanaApi'*/[0m
+  [1m[36mHotel Load (1.5ms)[0m  [1m[34mSELECT "hotels".* FROM "hotels" WHERE "hotels"."organization_id" = 3 AND "hotels"."name" = 'Casa del Faro' LIMIT 1 /*application='HumanaApi'*/[0m
+  [1m[36mTRANSACTION (0.1ms)[0m  [1m[35mBEGIN /*application='HumanaApi'*/[0m
+  [1m[36mHotel Create (1.7ms)[0m  [1m[32mINSERT INTO "hotels" ("organization_id", "name", "city", "country", "country_code", "latitude", "longitude", "certified", "wellness_standard", "description", "created_at", "updated_at") VALUES (3, 'Casa del Faro', 'Ibiza', 'Spain', 'ES', 38.9067, 1.4206, TRUE, 'Global Wellness Institute', NULL, '2026-06-02 20:22:15.818106', '2026-06-02 20:22:15.818106') RETURNING "id" /*application='HumanaApi'*/[0m
+  [1m[36mTRANSACTION (0.1ms)[0m  [1m[35mCOMMIT /*application='HumanaApi'*/[0m
+  [1m[36mExperience Load (2.1ms)[0m  [1m[34mSELECT "experiences".* FROM "experiences" WHERE "experiences"."slug" = 'mediterranean-silence' LIMIT 1 /*application='HumanaApi'*/[0m
+  [1m[36mTRANSACTION (0.0ms)[0m  [1m[35mBEGIN /*application='HumanaApi'*/[0m
+  [1m[36mExperience Exists? (0.2ms)[0m  [1m[34mSELECT 1 AS one FROM "experiences" WHERE "experiences"."slug" = 'mediterranean-silence' LIMIT 1 /*application='HumanaApi'*/[0m
+  [1m[36mExperience Create (1.0ms)[0m  [1m[32mINSERT INTO "experiences" ("hotel_id", "slug", "kind", "title", "description", "location", "country", "country_code", "starts_on", "ends_on", "price_cents", "currency", "commission_rate", "capacity", "image_url", "status", "created_at", "updated_at") VALUES (1, 'mediterranean-silence', 'retreat', 'Mediterranean Silence', 'Conscious breathing, guided fasting and cliffside meditation sessions. Program certified by Global Wellness Institute.', 'Ibiza · Spain', 'Spain', 'ES', '2026-05-12', '2026-05-19', 524000, 'USD', 0.12, 24, '/images/retreat-ibiza.jpg', 'active', '2026-06-02 20:22:15.831969', '2026-06-02 20:22:15.831969') RETURNING "id" /*application='HumanaApi'*/[0m
+  [1m[36mTRANSACTION (0.2ms)[0m  [1m[35mCOMMIT /*application='HumanaApi'*/[0m
+  [1m[36mOrganization Load (1.9ms)[0m  [1m[34mSELECT "organizations".* FROM "organizations" WHERE "organizations"."name" = 'Itzamná Hospitality' LIMIT 1 /*application='HumanaApi'*/[0m
+  [1m[36mTRANSACTION (0.1ms)[0m  [1m[35mBEGIN /*application='HumanaApi'*/[0m
+  [1m[36mOrganization Create (0.5ms)[0m  [1m[32mINSERT INTO "organizations" ("name", "kind", "status", "city", "country", "country_code", "contact_email", "website", "created_at", "updated_at") VALUES ('Itzamná Hospitality', 'hotel', 'verified', 'Tulum', 'Mexico', 'MX', NULL, NULL, '2026-06-02 20:22:15.836670', '2026-06-02 20:22:15.836670') RETURNING "id" /*application='HumanaApi'*/[0m
+  [1m[36mTRANSACTION (0.2ms)[0m  [1m[35mCOMMIT /*application='HumanaApi'*/[0m
+  [1m[36mHotel Load (0.2ms)[0m  [1m[34mSELECT "hotels".* FROM "hotels" WHERE "hotels"."organization_id" = 4 AND "hotels"."name" = 'Hotel Itzamná' LIMIT 1 /*application='HumanaApi'*/[0m
+  [1m[36mTRANSACTION (0.5ms)[0m  [1m[35mBEGIN /*application='HumanaApi'*/[0m
+  [1m[36mHotel Create (2.0ms)[0m  [1m[32mINSERT INTO "hotels" ("organization_id", "name", "city", "country", "country_code", "latitude", "longitude", "certified", "wellness_standard", "description", "created_at", "updated_at") VALUES (4, 'Hotel Itzamná', 'Tulum', 'Mexico', 'MX', 20.2114, -87.4654, TRUE, 'Global Wellness Institute', NULL, '2026-06-02 20:22:15.841730', '2026-06-02 20:22:15.841730') RETURNING "id" /*application='HumanaApi'*/[0m
+  [1m[36mTRANSACTION (0.2ms)[0m  [1m[35mCOMMIT /*application='HumanaApi'*/[0m
+  [1m[36mExperience Load (0.2ms)[0m  [1m[34mSELECT "experiences".* FROM "experiences" WHERE "experiences"."slug" = 'root-and-ceremony' LIMIT 1 /*application='HumanaApi'*/[0m
+  [1m[36mTRANSACTION (0.0ms)[0m  [1m[35mBEGIN /*application='HumanaApi'*/[0m
+  [1m[36mExperience Exists? (0.5ms)[0m  [1m[34mSELECT 1 AS one FROM "experiences" WHERE "experiences"."slug" = 'root-and-ceremony' LIMIT 1 /*application='HumanaApi'*/[0m
+  [1m[36mExperience Create (0.2ms)[0m  [1m[32mINSERT INTO "experiences" ("hotel_id", "slug", "kind", "title", "description", "location", "country", "country_code", "starts_on", "ends_on", "price_cents", "currency", "commission_rate", "capacity", "image_url", "status", "created_at", "updated_at") VALUES (2, 'root-and-ceremony', 'masterclass', 'Root and Ceremony', 'Immersion in ancestral Mayan medicine, sunrise yoga and cacao circles guided by certified facilitators.', 'Tulum · Mexico', 'Mexico', 'MX', '2026-05-28', '2026-06-01', 346000, 'USD', 0.15, 18, '/images/retreat-tulum.jpg', 'active', '2026-06-02 20:22:15.845905', '2026-06-02 20:22:15.845905') RETURNING "id" /*application='HumanaApi'*/[0m
+  [1m[36mTRANSACTION (0.1ms)[0m  [1m[35mCOMMIT /*application='HumanaApi'*/[0m
+  [1m[36mOrganization Load (0.1ms)[0m  [1m[34mSELECT "organizations".* FROM "organizations" WHERE "organizations"."name" = 'Marina Bay Sanctuary Group' LIMIT 1 /*application='HumanaApi'*/[0m
+  [1m[36mTRANSACTION (0.0ms)[0m  [1m[35mBEGIN /*application='HumanaApi'*/[0m
+  [1m[36mOrganization Create (0.4ms)[0m  [1m[32mINSERT INTO "organizations" ("name", "kind", "status", "city", "country", "country_code", "contact_email", "website", "created_at", "updated_at") VALUES ('Marina Bay Sanctuary Group', 'hotel', 'verified', 'Singapore', 'Singapore', 'SG', NULL, NULL, '2026-06-02 20:22:15.847408', '2026-06-02 20:22:15.847408') RETURNING "id" /*application='HumanaApi'*/[0m
+  [1m[36mTRANSACTION (0.1ms)[0m  [1m[35mCOMMIT /*application='HumanaApi'*/[0m
+  [1m[36mHotel Load (0.1ms)[0m  [1m[34mSELECT "hotels".* FROM "hotels" WHERE "hotels"."organization_id" = 5 AND "hotels"."name" = 'Marina Bay Sanctuary' LIMIT 1 /*application='HumanaApi'*/[0m
+  [1m[36mTRANSACTION (0.0ms)[0m  [1m[35mBEGIN /*application='HumanaApi'*/[0m
+  [1m[36mHotel Create (0.5ms)[0m  [1m[32mINSERT INTO "hotels" ("organization_id", "name", "city", "country", "country_code", "latitude", "longitude", "certified", "wellness_standard", "description", "created_at", "updated_at") VALUES (5, 'Marina Bay Sanctuary', 'Singapore', 'Singapore', 'SG', 1.2834, 103.8607, TRUE, 'Global Wellness Institute', NULL, '2026-06-02 20:22:15.849242', '2026-06-02 20:22:15.849242') RETURNING "id" /*application='HumanaApi'*/[0m
+  [1m[36mTRANSACTION (0.1ms)[0m  [1m[35mCOMMIT /*application='HumanaApi'*/[0m
+  [1m[36mExperience Load (0.2ms)[0m  [1m[34mSELECT "experiences".* FROM "experiences" WHERE "experiences"."slug" = 'conscious-leadership' LIMIT 1 /*application='HumanaApi'*/[0m
+  [1m[36mTRANSACTION (0.1ms)[0m  [1m[35mBEGIN /*application='HumanaApi'*/[0m
+  [1m[36mExperience Exists? (0.6ms)[0m  [1m[34mSELECT 1 AS one FROM "experiences" WHERE "experiences"."slug" = 'conscious-leadership' LIMIT 1 /*application='HumanaApi'*/[0m
+  [1m[36mExperience Create (0.2ms)[0m  [1m[32mINSERT INTO "experiences" ("hotel_id", "slug", "kind", "title", "description", "location", "country", "country_code", "starts_on", "ends_on", "price_cents", "currency", "commission_rate", "capacity", "image_url", "status", "created_at", "updated_at") VALUES (3, 'conscious-leadership', 'corporate', 'Conscious Leadership', 'Executive retreat for leadership teams. Somatic coaching, strategic sessions and vertical integration spaces.', 'Singapore', 'Singapore', 'SG', '2026-06-09', '2026-06-12', 691000, 'USD', 0.1, 30, '/images/retreat-singapore.jpg', 'upcoming', '2026-06-02 20:22:15.851971', '2026-06-02 20:22:15.851971') RETURNING "id" /*application='HumanaApi'*/[0m
+  [1m[36mTRANSACTION (0.2ms)[0m  [1m[35mCOMMIT /*application='HumanaApi'*/[0m
+  [1m[36mOrganization Load (0.1ms)[0m  [1m[34mSELECT "organizations".* FROM "organizations" WHERE "organizations"."name" = 'Ananda Villas' LIMIT 1 /*application='HumanaApi'*/[0m
+  [1m[36mTRANSACTION (0.0ms)[0m  [1m[35mBEGIN /*application='HumanaApi'*/[0m
+  [1m[36mOrganization Create (0.4ms)[0m  [1m[32mINSERT INTO "organizations" ("name", "kind", "status", "city", "country", "country_code", "contact_email", "website", "created_at", "updated_at") VALUES ('Ananda Villas', 'hotel', 'verified', 'Ubud', 'Indonesia', 'ID', NULL, NULL, '2026-06-02 20:22:15.855074', '2026-06-02 20:22:15.855074') RETURNING "id" /*application='HumanaApi'*/[0m
+  [1m[36mTRANSACTION (0.1ms)[0m  [1m[35mCOMMIT /*application='HumanaApi'*/[0m
+  [1m[36mHotel Load (0.1ms)[0m  [1m[34mSELECT "hotels".* FROM "hotels" WHERE "hotels"."organization_id" = 6 AND "hotels"."name" = 'Ananda Villa' LIMIT 1 /*application='HumanaApi'*/[0m
+  [1m[36mTRANSACTION (0.1ms)[0m  [1m[35mBEGIN /*application='HumanaApi'*/[0m
+  [1m[36mHotel Create (0.7ms)[0m  [1m[32mINSERT INTO "hotels" ("organization_id", "name", "city", "country", "country_code", "latitude", "longitude", "certified", "wellness_standard", "description", "created_at", "updated_at") VALUES (6, 'Ananda Villa', 'Ubud', 'Indonesia', 'ID', -8.5069, 115.2625, TRUE, 'Global Wellness Institute', NULL, '2026-06-02 20:22:15.856687', '2026-06-02 20:22:15.856687') RETURNING "id" /*application='HumanaApi'*/[0m
+  [1m[36mTRANSACTION (0.1ms)[0m  [1m[35mCOMMIT /*application='HumanaApi'*/[0m
+  [1m[36mExperience Load (0.1ms)[0m  [1m[34mSELECT "experiences".* FROM "experiences" WHERE "experiences"."slug" = 'ubud-roots' LIMIT 1 /*application='HumanaApi'*/[0m
+  [1m[36mTRANSACTION (0.0ms)[0m  [1m[35mBEGIN /*application='HumanaApi'*/[0m
+  [1m[36mExperience Exists? (0.4ms)[0m  [1m[34mSELECT 1 AS one FROM "experiences" WHERE "experiences"."slug" = 'ubud-roots' LIMIT 1 /*application='HumanaApi'*/[0m
+  [1m[36mExperience Create (0.9ms)[0m  [1m[32mINSERT INTO "experiences" ("hotel_id", "slug", "kind", "title", "description", "location", "country", "country_code", "starts_on", "ends_on", "price_cents", "currency", "commission_rate", "capacity", "image_url", "status", "created_at", "updated_at") VALUES (4, 'ubud-roots', 'masterclass', 'Ubud Roots', 'Rainforest immersion, plant-based cuisine masterclass and breathwork with Balinese practitioners.', 'Ubud · Bali', 'Indonesia', 'ID', '2026-07-02', '2026-07-07', 458000, 'USD', 0.13, 20, '/images/retreat-bali.jpg', 'upcoming', '2026-06-02 20:22:15.859395', '2026-06-02 20:22:15.859395') RETURNING "id" /*application='HumanaApi'*/[0m
+  [1m[36mTRANSACTION (0.4ms)[0m  [1m[35mCOMMIT /*application='HumanaApi'*/[0m
+  [1m[36mClient Load (1.3ms)[0m  [1m[34mSELECT "clients".* FROM "clients" WHERE "clients"."organization_id" = 2 AND "clients"."name" = 'Marina Solano' LIMIT 1 /*application='HumanaApi'*/[0m
+  [1m[36mTRANSACTION (0.0ms)[0m  [1m[35mBEGIN /*application='HumanaApi'*/[0m
+  [1m[36mClient Create (2.0ms)[0m  [1m[32mINSERT INTO "clients" ("organization_id", "name", "email", "phone", "notes", "created_at", "updated_at") VALUES (2, 'Marina Solano', 'marina.solano@example.com', '+34 600 112 233', NULL, '2026-06-02 20:22:15.867947', '2026-06-02 20:22:15.867947') RETURNING "id" /*application='HumanaApi'*/[0m
+  [1m[36mTRANSACTION (0.2ms)[0m  [1m[35mCOMMIT /*application='HumanaApi'*/[0m
+  [1m[36mClient Load (0.1ms)[0m  [1m[34mSELECT "clients".* FROM "clients" WHERE "clients"."organization_id" = 2 AND "clients"."name" = 'Grupo Lumen' LIMIT 1 /*application='HumanaApi'*/[0m
+  [1m[36mTRANSACTION (0.0ms)[0m  [1m[35mBEGIN /*application='HumanaApi'*/[0m
+  [1m[36mClient Create (0.5ms)[0m  [1m[32mINSERT INTO "clients" ("organization_id", "name", "email", "phone", "notes", "created_at", "updated_at") VALUES (2, 'Grupo Lumen', 'viajes@grupolumen.com', NULL, 'Corporate wellness program, 2026 offsite.', '2026-06-02 20:22:15.872145', '2026-06-02 20:22:15.872145') RETURNING "id" /*application='HumanaApi'*/[0m
+  [1m[36mTRANSACTION (0.2ms)[0m  [1m[35mCOMMIT /*application='HumanaApi'*/[0m
+  [1m[36mBooking Load (2.8ms)[0m  [1m[34mSELECT "bookings".* FROM "bookings" WHERE "bookings"."organization_id" = 2 AND "bookings"."experience_id" = 1 LIMIT 1 /*application='HumanaApi'*/[0m
+  [1m[36mTRANSACTION (0.0ms)[0m  [1m[35mBEGIN /*application='HumanaApi'*/[0m
+  [1m[36mBooking Exists? (0.1ms)[0m  [1m[34mSELECT 1 AS one FROM "bookings" WHERE "bookings"."reference" = 'HMN-HIMJDD' LIMIT 1 /*application='HumanaApi'*/[0m
+  ↳ app/models/booking.rb:34:in `block in assign_reference'
+  [1m[36mCACHE Booking Exists? (0.0ms)[0m  [1m[34mSELECT 1 AS one FROM "bookings" WHERE "bookings"."reference" = 'HMN-HIMJDD' LIMIT 1[0m
+  [1m[36mBooking Create (1.8ms)[0m  [1m[32mINSERT INTO "bookings" ("organization_id", "experience_id", "client_id", "reference", "guests", "starts_on", "ends_on", "status", "amount_cents", "currency", "commission_cents", "notes", "created_at", "updated_at") VALUES (2, 1, 1, 'HMN-HIMJDD', 2, '2026-05-12', '2026-05-19', 'confirmed', 1048000, 'USD', 125760, NULL, '2026-06-02 20:22:15.883789', '2026-06-02 20:22:15.883789') RETURNING "id" /*application='HumanaApi'*/[0m
+  [1m[36mTRANSACTION (0.5ms)[0m  [1m[35mCOMMIT /*application='HumanaApi'*/[0m
+  [1m[36mOrganization Count (1.7ms)[0m  [1m[34mSELECT COUNT(*) FROM "organizations" /*application='HumanaApi'*/[0m
+  [1m[36mUser Count (0.2ms)[0m  [1m[34mSELECT COUNT(*) FROM "users" /*application='HumanaApi'*/[0m
+  [1m[36mHotel Count (0.1ms)[0m  [1m[34mSELECT COUNT(*) FROM "hotels" /*application='HumanaApi'*/[0m
+  [1m[36mExperience Count (0.1ms)[0m  [1m[34mSELECT COUNT(*) FROM "experiences" /*application='HumanaApi'*/[0m
+  [1m[36mClient Count (0.1ms)[0m  [1m[34mSELECT COUNT(*) FROM "clients" /*application='HumanaApi'*/[0m
+  [1m[36mBooking Count (0.3ms)[0m  [1m[34mSELECT COUNT(*) FROM "bookings" /*application='HumanaApi'*/[0m
+Started GET "/" for 127.0.0.1 at 2026-06-02 17:22:40 -0300
+  [1m[36mActiveRecord::SchemaMigration Load (2.0ms)[0m  [1m[34mSELECT "schema_migrations"."version" FROM "schema_migrations" ORDER BY "schema_migrations"."version" ASC /*application='HumanaApi'*/[0m
+Started POST "/api/v1/auth/login" for 127.0.0.1 at 2026-06-02 17:22:40 -0300
+Processing by Api::V1::SessionsController#create as */*
+  Parameters: {"auth"=>{"email"=>"[FILTERED]", "password"=>"[FILTERED]"}, "session"=>{"auth"=>{"email"=>"[FILTERED]", "password"=>"[FILTERED]"}}}
+  [1m[36mUser Load (0.7ms)[0m  [1m[34mSELECT "users".* FROM "users" WHERE (lower(email) = 'agent@viajeseter.com') LIMIT 1 /*action='create',application='HumanaApi',controller='sessions'*/[0m
+  ↳ app/controllers/api/v1/sessions_controller.rb:9:in `create'
+Completed 401 Unauthorized in 215ms (Views: 0.1ms | ActiveRecord: 14.2ms (1 query, 0 cached) | GC: 4.5ms)
+
+
+Started POST "/api/v1/auth/login" for 127.0.0.1 at 2026-06-02 17:22:40 -0300
+Processing by Api::V1::SessionsController#create as */*
+  Parameters: {"auth"=>{"email"=>"[FILTERED]", "password"=>"[FILTERED]"}, "session"=>{"auth"=>{"email"=>"[FILTERED]", "password"=>"[FILTERED]"}}}
+  [1m[36mUser Load (0.3ms)[0m  [1m[34mSELECT "users".* FROM "users" WHERE (lower(email) = 'agent@viajeseter.com') LIMIT 1 /*action='create',application='HumanaApi',controller='sessions'*/[0m
+  ↳ app/controllers/api/v1/sessions_controller.rb:9:in `create'
+  [1m[36mUser Update (1.3ms)[0m  [1m[33mUPDATE "users" SET "last_login_at" = '2026-06-02 20:22:40.566582' WHERE "users"."id" = 2 /*action='create',application='HumanaApi',controller='sessions'*/[0m
+  ↳ app/models/user.rb:24:in `touch_login!'
+Completed 500 Internal Server Error in 185ms (ActiveRecord: 1.6ms (2 queries, 0 cached) | GC: 0.0ms)
+
+
+  
+ArgumentError (wrong number of arguments (given 0, expected 1)):
+  
+app/lib/json_web_token.rb:14:in `encode'
+app/controllers/api/v1/sessions_controller.rb:13:in `create'
+Started GET "/api/v1/experiences" for 127.0.0.1 at 2026-06-02 17:22:40 -0300
+Processing by Api::V1::ExperiencesController#index as */*
+  [1m[36mUser Load (0.2ms)[0m  [1m[34mSELECT "users".* FROM "users" WHERE "users"."id" IS NULL LIMIT 1 /*action='index',application='HumanaApi',controller='experiences'*/[0m
+  ↳ app/controllers/application_controller.rb:16:in `current_user'
+Filter chain halted as :authenticate_user! rendered or redirected
+Completed 401 Unauthorized in 1ms (Views: 0.0ms | ActiveRecord: 0.2ms (1 query, 0 cached) | GC: 0.0ms)
+
+
+Started GET "/api/v1/auth/me" for 127.0.0.1 at 2026-06-02 17:22:40 -0300
+Processing by Api::V1::SessionsController#show as */*
+  [1m[36mUser Load (0.4ms)[0m  [1m[34mSELECT "users".* FROM "users" WHERE "users"."id" IS NULL LIMIT 1 /*action='show',application='HumanaApi',controller='sessions'*/[0m
+  ↳ app/controllers/application_controller.rb:16:in `current_user'
+Filter chain halted as :authenticate_user! rendered or redirected
+Completed 401 Unauthorized in 1ms (Views: 0.1ms | ActiveRecord: 0.4ms (1 query, 0 cached) | GC: 0.0ms)
+
+
+Started POST "/api/v1/auth/login" for 127.0.0.1 at 2026-06-02 17:23:37 -0300
+Processing by Api::V1::SessionsController#create as */*
+  Parameters: {"auth"=>{"email"=>"[FILTERED]", "password"=>"[FILTERED]"}, "session"=>{"auth"=>{"email"=>"[FILTERED]", "password"=>"[FILTERED]"}}}
+  [1m[36mUser Load (3.1ms)[0m  [1m[34mSELECT "users".* FROM "users" WHERE (lower(email) = 'agent@viajeseter.com') LIMIT 1 /*action='create',application='HumanaApi',controller='sessions'*/[0m
+  ↳ app/controllers/api/v1/sessions_controller.rb:9:in `create'
+  [1m[36mUser Update (2.6ms)[0m  [1m[33mUPDATE "users" SET "last_login_at" = '2026-06-02 20:23:38.161643' WHERE "users"."id" = 2 /*action='create',application='HumanaApi',controller='sessions'*/[0m
+  ↳ app/models/user.rb:24:in `touch_login!'
+  [1m[36mOrganization Load (0.8ms)[0m  [1m[34mSELECT "organizations".* FROM "organizations" WHERE "organizations"."id" = 2 LIMIT 1 /*action='create',application='HumanaApi',controller='sessions'*/[0m
+  ↳ app/models/user.rb:20:in `platform_admin?'
+Completed 201 Created in 204ms (Views: 0.2ms | ActiveRecord: 13.5ms (3 queries, 0 cached) | GC: 0.2ms)
+
+
+Started GET "/api/v1/auth/me" for 127.0.0.1 at 2026-06-02 17:23:38 -0300
+Processing by Api::V1::SessionsController#show as */*
+  [1m[36mUser Load (0.3ms)[0m  [1m[34mSELECT "users".* FROM "users" WHERE "users"."id" = 2 LIMIT 1 /*action='show',application='HumanaApi',controller='sessions'*/[0m
+  ↳ app/controllers/application_controller.rb:16:in `current_user'
+  [1m[36mOrganization Load (0.1ms)[0m  [1m[34mSELECT "organizations".* FROM "organizations" WHERE "organizations"."id" = 2 LIMIT 1 /*action='show',application='HumanaApi',controller='sessions'*/[0m
+  ↳ app/models/user.rb:20:in `platform_admin?'
+Completed 200 OK in 2ms (Views: 0.1ms | ActiveRecord: 0.4ms (2 queries, 0 cached) | GC: 0.0ms)
+
+
+Started GET "/api/v1/experiences?kind=masterclass" for 127.0.0.1 at 2026-06-02 17:23:38 -0300
+Processing by Api::V1::ExperiencesController#index as */*
+  Parameters: {"kind"=>"masterclass"}
+  [1m[36mUser Load (0.3ms)[0m  [1m[34mSELECT "users".* FROM "users" WHERE "users"."id" = 2 LIMIT 1 /*action='index',application='HumanaApi',controller='experiences'*/[0m
+  ↳ app/controllers/application_controller.rb:16:in `current_user'
+  [1m[36mExperience Load (2.6ms)[0m  [1m[34mSELECT "experiences".* FROM "experiences" WHERE "experiences"."status" IN ('active', 'upcoming') AND "experiences"."kind" = 'masterclass' ORDER BY "experiences"."starts_on" ASC LIMIT 20 OFFSET 0 /*action='index',application='HumanaApi',controller='experiences'*/[0m
+  ↳ app/controllers/api/v1/experiences_controller.rb:15:in `map'
+  [1m[36mHotel Load (2.2ms)[0m  [1m[34mSELECT "hotels".* FROM "hotels" WHERE "hotels"."id" IN (2, 4) /*action='index',application='HumanaApi',controller='experiences'*/[0m
+  ↳ app/controllers/api/v1/experiences_controller.rb:15:in `map'
+  [1m[36mExperience Count (0.6ms)[0m  [1m[34mSELECT COUNT(*) FROM "experiences" WHERE "experiences"."status" IN ('active', 'upcoming') AND "experiences"."kind" = 'masterclass' /*action='index',application='HumanaApi',controller='experiences'*/[0m
+  ↳ app/controllers/api/v1/base_controller.rb:27:in `meta_for'
+Completed 200 OK in 27ms (Views: 0.1ms | ActiveRecord: 11.0ms (4 queries, 0 cached) | GC: 2.1ms)
+
+
+Started GET "/api/v1/coverage" for 127.0.0.1 at 2026-06-02 17:23:38 -0300
+Processing by Api::V1::CoverageController#index as */*
+  [1m[36mUser Load (0.2ms)[0m  [1m[34mSELECT "users".* FROM "users" WHERE "users"."id" = 2 LIMIT 1 /*action='index',application='HumanaApi',controller='coverage'*/[0m
+  ↳ app/controllers/application_controller.rb:16:in `current_user'
+  [1m[36mExperience Pluck (3.3ms)[0m  [1m[34mSELECT "experiences"."country_code", "experiences"."country", COUNT(*), COUNT(*) FILTER (WHERE experiences.status = 'active'), AVG(hotels.latitude), AVG(hotels.longitude) FROM "experiences" INNER JOIN "hotels" ON "hotels"."id" = "experiences"."hotel_id" WHERE "experiences"."status" IN ('active', 'upcoming') GROUP BY "experiences"."country_code", "experiences"."country" /*action='index',application='HumanaApi',controller='coverage'*/[0m
+  ↳ app/controllers/api/v1/coverage_controller.rb:11:in `index'
+Completed 200 OK in 8ms (Views: 0.1ms | ActiveRecord: 3.5ms (2 queries, 0 cached) | GC: 0.0ms)
+
+
+Started POST "/api/v1/auth/login" for 127.0.0.1 at 2026-06-02 17:23:51 -0300
+Processing by Api::V1::SessionsController#create as */*
+  Parameters: {"auth"=>{"email"=>"[FILTERED]", "password"=>"[FILTERED]"}, "session"=>{"auth"=>{"email"=>"[FILTERED]", "password"=>"[FILTERED]"}}}
+  [1m[36mUser Load (1.4ms)[0m  [1m[34mSELECT "users".* FROM "users" WHERE (lower(email) = 'agent@viajeseter.com') LIMIT 1 /*action='create',application='HumanaApi',controller='sessions'*/[0m
+  ↳ app/controllers/api/v1/sessions_controller.rb:9:in `create'
+  [1m[36mUser Update (9.1ms)[0m  [1m[33mUPDATE "users" SET "last_login_at" = '2026-06-02 20:23:52.075541' WHERE "users"."id" = 2 /*action='create',application='HumanaApi',controller='sessions'*/[0m
+  ↳ app/models/user.rb:24:in `touch_login!'
+  [1m[36mOrganization Load (0.3ms)[0m  [1m[34mSELECT "organizations".* FROM "organizations" WHERE "organizations"."id" = 2 LIMIT 1 /*action='create',application='HumanaApi',controller='sessions'*/[0m
+  ↳ app/models/user.rb:20:in `platform_admin?'
+Completed 201 Created in 192ms (Views: 0.2ms | ActiveRecord: 10.7ms (3 queries, 0 cached) | GC: 0.0ms)
+
+
+Started POST "/api/v1/clients" for 127.0.0.1 at 2026-06-02 17:23:52 -0300
+Processing by Api::V1::ClientsController#create as */*
+  Parameters: {"client"=>{"name"=>"Tomás Vidal", "email"=>"[FILTERED]"}}
+  [1m[36mUser Load (0.3ms)[0m  [1m[34mSELECT "users".* FROM "users" WHERE "users"."id" = 2 LIMIT 1 /*action='create',application='HumanaApi',controller='clients'*/[0m
+  ↳ app/controllers/application_controller.rb:16:in `current_user'
+  [1m[36mOrganization Load (0.2ms)[0m  [1m[34mSELECT "organizations".* FROM "organizations" WHERE "organizations"."id" = 2 LIMIT 1 /*action='create',application='HumanaApi',controller='clients'*/[0m
+  ↳ app/models/user.rb:17:in `agency?'
+  [1m[36mTRANSACTION (0.1ms)[0m  [1m[35mBEGIN /*action='create',application='HumanaApi',controller='clients'*/[0m
+  ↳ app/controllers/api/v1/clients_controller.rb:24:in `create'
+  [1m[36mClient Create (2.7ms)[0m  [1m[32mINSERT INTO "clients" ("organization_id", "name", "email", "phone", "notes", "created_at", "updated_at") VALUES (2, 'Tomás Vidal', 'tomas@example.com', NULL, NULL, '2026-06-02 20:23:52.125183', '2026-06-02 20:23:52.125183') RETURNING "id" /*action='create',application='HumanaApi',controller='clients'*/[0m
+  ↳ app/controllers/api/v1/clients_controller.rb:24:in `create'
+  [1m[36mTRANSACTION (0.2ms)[0m  [1m[35mCOMMIT /*action='create',application='HumanaApi',controller='clients'*/[0m
+  ↳ app/controllers/api/v1/clients_controller.rb:24:in `create'
+Completed 201 Created in 24ms (Views: 0.1ms | ActiveRecord: 15.0ms (3 queries, 0 cached) | GC: 0.6ms)
+
+
+Started POST "/api/v1/bookings" for 127.0.0.1 at 2026-06-02 17:23:52 -0300
+Processing by Api::V1::BookingsController#create as */*
+  Parameters: {"booking"=>{"experience_id"=>1, "guests"=>2}}
+  [1m[36mUser Load (0.4ms)[0m  [1m[34mSELECT "users".* FROM "users" WHERE "users"."id" = 2 LIMIT 1 /*action='create',application='HumanaApi',controller='bookings'*/[0m
+  ↳ app/controllers/application_controller.rb:16:in `current_user'
+  [1m[36mOrganization Load (0.3ms)[0m  [1m[34mSELECT "organizations".* FROM "organizations" WHERE "organizations"."id" = 2 LIMIT 1 /*action='create',application='HumanaApi',controller='bookings'*/[0m
+  ↳ app/models/user.rb:17:in `agency?'
+  [1m[36mTRANSACTION (0.1ms)[0m  [1m[35mBEGIN /*action='create',application='HumanaApi',controller='bookings'*/[0m
+  ↳ app/models/booking.rb:34:in `block in assign_reference'
+  [1m[36mBooking Exists? (1.6ms)[0m  [1m[34mSELECT 1 AS one FROM "bookings" WHERE "bookings"."reference" = 'HMN-NV27WL' LIMIT 1 /*action='create',application='HumanaApi',controller='bookings'*/[0m
+  ↳ app/models/booking.rb:34:in `block in assign_reference'
+  [1m[36mExperience Load (0.3ms)[0m  [1m[34mSELECT "experiences".* FROM "experiences" WHERE "experiences"."id" = 1 LIMIT 1 /*action='create',application='HumanaApi',controller='bookings'*/[0m
+  ↳ app/models/booking.rb:42:in `snapshot_dates'
+  [1m[36mCACHE Booking Exists? (0.0ms)[0m  [1m[34mSELECT 1 AS one FROM "bookings" WHERE "bookings"."reference" = 'HMN-NV27WL' LIMIT 1[0m
+  ↳ app/controllers/api/v1/bookings_controller.rb:31:in `create'
+  [1m[36mBooking Create (0.5ms)[0m  [1m[32mINSERT INTO "bookings" ("organization_id", "experience_id", "client_id", "reference", "guests", "starts_on", "ends_on", "status", "amount_cents", "currency", "commission_cents", "notes", "created_at", "updated_at") VALUES (2, 1, NULL, 'HMN-NV27WL', 2, '2026-05-12', '2026-05-19', 'inquiry', 1048000, 'USD', 125760, NULL, '2026-06-02 20:23:52.152247', '2026-06-02 20:23:52.152247') RETURNING "id" /*action='create',application='HumanaApi',controller='bookings'*/[0m
+  ↳ app/controllers/api/v1/bookings_controller.rb:31:in `create'
+  [1m[36mTRANSACTION (0.2ms)[0m  [1m[35mCOMMIT /*action='create',application='HumanaApi',controller='bookings'*/[0m
+  ↳ app/controllers/api/v1/bookings_controller.rb:31:in `create'
+  [1m[36mHotel Load (0.1ms)[0m  [1m[34mSELECT "hotels".* FROM "hotels" WHERE "hotels"."id" = 1 LIMIT 1 /*action='create',application='HumanaApi',controller='bookings'*/[0m
+  ↳ app/serializers/api_serializers.rb:75:in `experience'
+Completed 201 Created in 14ms (Views: 0.1ms | ActiveRecord: 6.2ms (7 queries, 1 cached) | GC: 2.0ms)
+
+
+Started GET "/api/v1/bookings" for 127.0.0.1 at 2026-06-02 17:23:52 -0300
+Processing by Api::V1::BookingsController#index as */*
+  [1m[36mUser Load (0.2ms)[0m  [1m[34mSELECT "users".* FROM "users" WHERE "users"."id" = 2 LIMIT 1 /*action='index',application='HumanaApi',controller='bookings'*/[0m
+  ↳ app/controllers/application_controller.rb:16:in `current_user'
+  [1m[36mOrganization Load (0.1ms)[0m  [1m[34mSELECT "organizations".* FROM "organizations" WHERE "organizations"."id" = 2 LIMIT 1 /*action='index',application='HumanaApi',controller='bookings'*/[0m
+  ↳ app/models/user.rb:17:in `agency?'
+  [1m[36mBooking Load (1.1ms)[0m  [1m[34mSELECT "bookings".* FROM "bookings" WHERE "bookings"."organization_id" = 2 ORDER BY "bookings"."created_at" DESC LIMIT 20 OFFSET 0 /*action='index',application='HumanaApi',controller='bookings'*/[0m
+  ↳ app/controllers/api/v1/bookings_controller.rb:17:in `map'
+  [1m[36mExperience Load (0.1ms)[0m  [1m[34mSELECT "experiences".* FROM "experiences" WHERE "experiences"."id" = 1 /*action='index',application='HumanaApi',controller='bookings'*/[0m
+  ↳ app/controllers/api/v1/bookings_controller.rb:17:in `map'
+  [1m[36mClient Load (2.0ms)[0m  [1m[34mSELECT "clients".* FROM "clients" WHERE "clients"."id" = 1 /*action='index',application='HumanaApi',controller='bookings'*/[0m
+  ↳ app/controllers/api/v1/bookings_controller.rb:17:in `map'
+  [1m[36mHotel Load (0.4ms)[0m  [1m[34mSELECT "hotels".* FROM "hotels" WHERE "hotels"."id" = 1 LIMIT 1 /*action='index',application='HumanaApi',controller='bookings'*/[0m
+  ↳ app/serializers/api_serializers.rb:75:in `experience'
+  [1m[36mBooking Count (0.3ms)[0m  [1m[34mSELECT COUNT(*) FROM "bookings" WHERE "bookings"."organization_id" = 2 /*action='index',application='HumanaApi',controller='bookings'*/[0m
+  ↳ app/controllers/api/v1/base_controller.rb:27:in `meta_for'
+  [1m[36mCACHE Booking Count (0.0ms)[0m  [1m[34mSELECT COUNT(*) FROM "bookings" WHERE "bookings"."organization_id" = 2[0m
+  ↳ app/controllers/api/v1/bookings_controller.rb:59:in `summary'
+  [1m[36mBooking Count (0.2ms)[0m  [1m[34mSELECT COUNT(*) FROM "bookings" WHERE "bookings"."organization_id" = 2 AND "bookings"."status" = 'confirmed' /*action='index',application='HumanaApi',controller='bookings'*/[0m
+  ↳ app/controllers/api/v1/bookings_controller.rb:60:in `summary'
+  [1m[36mBooking Sum (2.1ms)[0m  [1m[34mSELECT SUM("bookings"."commission_cents") FROM "bookings" LEFT OUTER JOIN "experiences" ON "experiences"."id" = "bookings"."experience_id" LEFT OUTER JOIN "clients" ON "clients"."id" = "bookings"."client_id" WHERE "bookings"."organization_id" = 2 AND "bookings"."status" != 'cancelled' /*action='index',application='HumanaApi',controller='bookings'*/[0m
+  ↳ app/controllers/api/v1/bookings_controller.rb:61:in `summary'
+  [1m[36mBooking Sum (0.4ms)[0m  [1m[34mSELECT SUM("bookings"."amount_cents") FROM "bookings" LEFT OUTER JOIN "experiences" ON "experiences"."id" = "bookings"."experience_id" LEFT OUTER JOIN "clients" ON "clients"."id" = "bookings"."client_id" WHERE "bookings"."organization_id" = 2 AND "bookings"."status" != 'cancelled' /*action='index',application='HumanaApi',controller='bookings'*/[0m
+  ↳ app/controllers/api/v1/bookings_controller.rb:62:in `summary'
+Completed 200 OK in 26ms (Views: 0.1ms | ActiveRecord: 6.8ms (11 queries, 1 cached) | GC: 13.0ms)
+
+
+Started POST "/api/v1/auth/login" for 127.0.0.1 at 2026-06-02 17:23:52 -0300
+Processing by Api::V1::SessionsController#create as */*
+  Parameters: {"auth"=>{"email"=>"[FILTERED]", "password"=>"[FILTERED]"}, "session"=>{"auth"=>{"email"=>"[FILTERED]", "password"=>"[FILTERED]"}}}
+  [1m[36mUser Load (0.3ms)[0m  [1m[34mSELECT "users".* FROM "users" WHERE (lower(email) = 'admin@humana.global') LIMIT 1 /*action='create',application='HumanaApi',controller='sessions'*/[0m
+  ↳ app/controllers/api/v1/sessions_controller.rb:9:in `create'
+  [1m[36mUser Update (0.8ms)[0m  [1m[33mUPDATE "users" SET "last_login_at" = '2026-06-02 20:23:52.381486' WHERE "users"."id" = 1 /*action='create',application='HumanaApi',controller='sessions'*/[0m
+  ↳ app/models/user.rb:24:in `touch_login!'
+  [1m[36mOrganization Load (0.3ms)[0m  [1m[34mSELECT "organizations".* FROM "organizations" WHERE "organizations"."id" = 1 LIMIT 1 /*action='create',application='HumanaApi',controller='sessions'*/[0m
+  ↳ app/serializers/api_serializers.rb:32:in `user'
+Completed 201 Created in 178ms (Views: 0.1ms | ActiveRecord: 1.3ms (3 queries, 0 cached) | GC: 0.5ms)
+
+
+Started GET "/api/v1/clients" for 127.0.0.1 at 2026-06-02 17:23:52 -0300
+Processing by Api::V1::ClientsController#index as */*
+  [1m[36mUser Load (0.3ms)[0m  [1m[34mSELECT "users".* FROM "users" WHERE "users"."id" = 1 LIMIT 1 /*action='index',application='HumanaApi',controller='clients'*/[0m
+  ↳ app/controllers/application_controller.rb:16:in `current_user'
+  [1m[36mOrganization Load (0.2ms)[0m  [1m[34mSELECT "organizations".* FROM "organizations" WHERE "organizations"."id" = 1 LIMIT 1 /*action='index',application='HumanaApi',controller='clients'*/[0m
+  ↳ app/models/user.rb:17:in `agency?'
+Filter chain halted as :require_agency! rendered or redirected
+Completed 403 Forbidden in 1ms (Views: 0.0ms | ActiveRecord: 0.5ms (2 queries, 0 cached) | GC: 0.0ms)
+
+
+Started POST "/api/v1/auth/login" for 127.0.0.1 at 2026-06-02 17:24:06 -0300
+Processing by Api::V1::SessionsController#create as */*
+  Parameters: {"auth"=>{"email"=>"[FILTERED]", "password"=>"[FILTERED]"}, "session"=>{"auth"=>{"email"=>"[FILTERED]", "password"=>"[FILTERED]"}}}
+  [1m[36mUser Load (1.9ms)[0m  [1m[34mSELECT "users".* FROM "users" WHERE (lower(email) = 'agent@viajeseter.com') LIMIT 1 /*action='create',application='HumanaApi',controller='sessions'*/[0m
+  ↳ app/controllers/api/v1/sessions_controller.rb:9:in `create'
+  [1m[36mUser Update (0.7ms)[0m  [1m[33mUPDATE "users" SET "last_login_at" = '2026-06-02 20:24:06.737945' WHERE "users"."id" = 2 /*action='create',application='HumanaApi',controller='sessions'*/[0m
+  ↳ app/models/user.rb:24:in `touch_login!'
+  [1m[36mOrganization Load (0.3ms)[0m  [1m[34mSELECT "organizations".* FROM "organizations" WHERE "organizations"."id" = 2 LIMIT 1 /*action='create',application='HumanaApi',controller='sessions'*/[0m
+  ↳ app/models/user.rb:20:in `platform_admin?'
+Completed 201 Created in 190ms (Views: 0.2ms | ActiveRecord: 2.9ms (3 queries, 0 cached) | GC: 0.0ms)
+
+
+Started GET "/api/v1/experiences/ubud-roots" for 127.0.0.1 at 2026-06-02 17:24:06 -0300
+Processing by Api::V1::ExperiencesController#show as */*
+  Parameters: {"id"=>"ubud-roots"}
+  [1m[36mUser Load (0.3ms)[0m  [1m[34mSELECT "users".* FROM "users" WHERE "users"."id" = 2 LIMIT 1 /*action='show',application='HumanaApi',controller='experiences'*/[0m
+  ↳ app/controllers/application_controller.rb:16:in `current_user'
+  [1m[36mExperience Load (0.5ms)[0m  [1m[34mSELECT "experiences".* FROM "experiences" WHERE "experiences"."slug" = 'ubud-roots' LIMIT 1 /*action='show',application='HumanaApi',controller='experiences'*/[0m
+  ↳ app/controllers/api/v1/experiences_controller.rb:22:in `show'
+  [1m[36mHotel Load (0.5ms)[0m  [1m[34mSELECT "hotels".* FROM "hotels" WHERE "hotels"."id" = 4 /*action='show',application='HumanaApi',controller='experiences'*/[0m
+  ↳ app/controllers/api/v1/experiences_controller.rb:22:in `show'
+Completed 200 OK in 3ms (Views: 0.1ms | ActiveRecord: 1.4ms (3 queries, 0 cached) | GC: 0.2ms)
+
+
+Started GET "/api/v1/experiences/does-not-exist" for 127.0.0.1 at 2026-06-02 17:24:06 -0300
+Processing by Api::V1::ExperiencesController#show as */*
+  Parameters: {"id"=>"does-not-exist"}
+  [1m[36mUser Load (3.9ms)[0m  [1m[34mSELECT "users".* FROM "users" WHERE "users"."id" = 2 LIMIT 1 /*action='show',application='HumanaApi',controller='experiences'*/[0m
+  ↳ app/controllers/application_controller.rb:16:in `current_user'
+  [1m[36mExperience Load (0.2ms)[0m  [1m[34mSELECT "experiences".* FROM "experiences" WHERE "experiences"."slug" = 'does-not-exist' LIMIT 1 /*action='show',application='HumanaApi',controller='experiences'*/[0m
+  ↳ app/controllers/api/v1/experiences_controller.rb:22:in `show'
+  [1m[36mExperience Load (0.2ms)[0m  [1m[34mSELECT "experiences".* FROM "experiences" WHERE "experiences"."id" = NULL LIMIT 1 /*action='show',application='HumanaApi',controller='experiences'*/[0m
+  ↳ app/controllers/api/v1/experiences_controller.rb:23:in `show'
+Completed 404 Not Found in 6ms (Views: 0.1ms | ActiveRecord: 4.3ms (3 queries, 0 cached) | GC: 0.0ms)
+
+
+Started GET "/api/v1/coverage" for 127.0.0.1 at 2026-06-02 17:24:06 -0300
+Processing by Api::V1::CoverageController#index as */*
+  [1m[36mUser Load (0.2ms)[0m  [1m[34mSELECT "users".* FROM "users" WHERE "users"."id" IS NULL LIMIT 1 /*action='index',application='HumanaApi',controller='coverage'*/[0m
+  ↳ app/controllers/application_controller.rb:16:in `current_user'
+Filter chain halted as :authenticate_user! rendered or redirected
+Completed 401 Unauthorized in 1ms (Views: 0.0ms | ActiveRecord: 0.2ms (1 query, 0 cached) | GC: 0.0ms)
+
+
+Started POST "/api/v1/auth/login" for 127.0.0.1 at 2026-06-02 17:24:06 -0300
+Processing by Api::V1::SessionsController#create as */*
+  Parameters: {"session"=>{}}
+Completed 400 Bad Request in 0ms (Views: 0.1ms | ActiveRecord: 0.0ms (0 queries, 0 cached) | GC: 0.0ms)
+
+
