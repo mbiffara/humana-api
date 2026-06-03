@@ -49,7 +49,9 @@ module ApiSerializers
     }
   end
 
-  def experience(exp, include_hotel: true)
+  # `include_commission` is false for public endpoints — commission data is
+  # B2B-internal and must not be exposed to unauthenticated consumers.
+  def experience(exp, include_hotel: true, include_commission: true)
     return nil unless exp
 
     data = {
@@ -67,11 +69,13 @@ module ApiSerializers
       price_cents: exp.price_cents,
       price: exp.price,
       currency: exp.currency,
-      commission_rate: exp.commission_rate.to_f,
-      commission_percent: exp.commission_percent,
       capacity: exp.capacity,
       image_url: exp.image_url
     }
+    if include_commission
+      data[:commission_rate] = exp.commission_rate.to_f
+      data[:commission_percent] = exp.commission_percent
+    end
     data[:hotel] = hotel(exp.hotel) if include_hotel
     data
   end

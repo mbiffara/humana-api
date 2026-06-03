@@ -54,6 +54,10 @@ curl http://127.0.0.1:3001/api/v1/auth/me -H 'Authorization: Bearer <jwt>'
 | POST   | `/auth/login`       | public       | Email + password → JWT + user                       |
 | GET    | `/auth/me`          | any user     | Current user + organization                         |
 | DELETE | `/auth/logout`      | any user     | No-op (token is stateless; client discards it)      |
+| GET    | `/public/hotels`        | **public**   | All network hotels. Filters: `country` (ISO-2), `q`, `certified`; paginated |
+| GET    | `/public/hotels/:id`    | **public**   | One hotel by id                                     |
+| GET    | `/public/experiences`     | **public**   | Published experiences ("packages"), **no commission data**. Filters: `kind`, `country`, `q`; paginated |
+| GET    | `/public/experiences/:id` | **public**   | One public experience by numeric id **or** slug (no commission data) |
 | GET    | `/experiences`      | any user     | Published experiences. Filters: `kind`, `country` (ISO-2), `q`; paginated `page`/`per_page` |
 | GET    | `/experiences/:id`  | any user     | One experience by numeric id **or** slug            |
 | GET    | `/coverage`         | any user     | Map markers: per-country active/upcoming counts + coords |

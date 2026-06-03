@@ -9,6 +9,12 @@ Rails.application.routes.draw do
       get    "auth/me",     to: "sessions#show"
       delete "auth/logout", to: "sessions#destroy"
 
+      # Public discovery (no authentication) — for marketing / unauthenticated surfaces
+      namespace :public do
+        resources :hotels, only: %i[index show]
+        resources :experiences, only: %i[index show]
+      end
+
       # Discovery
       resources :experiences, only: %i[index show]
       get "coverage", to: "coverage#index"
