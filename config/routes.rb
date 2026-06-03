@@ -20,5 +20,5 @@ Rails.application.routes.draw do
   end
 
   # Friendly root for humans hitting the API host directly.
-  root to: ->(_env) { [200, { "Content-Type" => "application/json" }, [{ service: "humana-api", status: "ok" }.to_json]] }
+  root to: "root#show"
 end
