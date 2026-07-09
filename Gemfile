@@ -22,6 +22,12 @@ gem "bootsnap", require: false
 # Use Rack CORS for handling Cross-Origin Resource Sharing (CORS), making cross-origin Ajax possible
 gem "rack-cors"
 
+# Transactional email via Resend
+gem "resend", "~> 0.17"
+
+# Load environment variables from .env file
+gem "dotenv-rails", groups: [:development, :test]
+
 group :development, :test do
   # See https://guides.rubyonrails.org/debugging_rails_applications.html#debugging-with-the-debug-gem
   gem "debug", platforms: %i[ mri windows ], require: "debug/prelude"
@@ -31,4 +37,8 @@ group :development, :test do
 
   # Static analysis for security vulnerabilities [https://brakemanscanner.org/]
   gem "brakeman", require: false
+
+  # Testing
+  gem "rspec-rails", "~> 7.0"
+  gem "factory_bot_rails"
 end
