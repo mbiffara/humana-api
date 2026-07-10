@@ -39,7 +39,27 @@ module Api
 
         def destroy
           country = Country.find(params[:id])
-          country.destroy!
+
+          # Require admin password
+          unless current_user.authenticate(params[:password].to_s)
+            return render json: { error: "Invalid password" }, status: :forbidden
+          end
+
+          # Require confirmation text
+          expected = country.name
+          unless params[:confirmation_text].to_s.strip == expected
+            return render json: { error: "Confirmation text does not match" }, status: :unprocessable_entity
+          end
+
+          # Cascade: destroy organizations, hotels, experiences, retreats in this country
+          ActiveRecord::Base.transaction do
+            Organization.where(country_code: country.code).destroy_all
+            Hotel.where(country_code: country.code).destroy_all
+            Retreat.where(country_code: country.code).destroy_all
+            Experience.where(country_code: country.code).destroy_all
+            country.destroy!
+          end
+
           head :no_content
         end
 

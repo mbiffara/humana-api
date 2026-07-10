@@ -40,7 +40,13 @@ module Api
 
           # Reset expiry
           invitation.update!(expires_at: 7.days.from_now)
-          InvitationMailer.invite(invitation).deliver_later
+
+          begin
+            InvitationMailer.invite(invitation).deliver_now
+          rescue StandardError => e
+            Rails.logger.warn("[InvitationMailer] Resend delivery failed: #{e.message}")
+            Rails.logger.info("[InvitationMailer] Magic link for #{invitation.email}: #{invitation.magic_link}")
+          end
 
           render json: { invitation: serialize_invitation(invitation) }
         end

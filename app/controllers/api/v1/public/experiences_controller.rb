@@ -7,6 +7,7 @@ module Api
         # GET /api/v1/public/experiences?kind=retreat&country=ES&q=ibiza
         def index
           scope = Experience.published
+                            .in_enabled_country
                             .includes(:hotel)
                             .by_kind(params[:kind])
                             .in_country(params[:country])

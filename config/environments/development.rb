@@ -23,6 +23,9 @@ Rails.application.configure do
     config.action_controller.perform_caching = false
   end
 
+  # Active Storage: use local disk in development.
+  config.active_storage.service = :local
+
   # Change to :null_store to avoid any caching.
   config.cache_store = :memory_store
 

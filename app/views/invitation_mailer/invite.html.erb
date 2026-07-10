@@ -91,12 +91,21 @@
                 <tr>
                   <td style="border-left: 3px solid #d4af37; padding: 14px 18px; background-color: #fafaf7; border-radius: 0 6px 6px 0;">
                     <table role="presentation" cellspacing="0" cellpadding="0" width="100%">
+                      <% if @assigned_office %>
+                      <tr>
+                        <td style="padding: 3px 0;">
+                          <span style="font-size: 13px; color: #8a8578;"><%= @t[:assigned_office_label] %>: &nbsp;</span>
+                          <span style="font-size: 13px; font-weight: 600; color: #111111;"><%= @assigned_office.name %></span>
+                        </td>
+                      </tr>
+                      <% else %>
                       <tr>
                         <td style="padding: 3px 0;">
                           <span style="font-size: 13px; color: #8a8578;"><%= @t[:organization] %>: &nbsp;</span>
                           <span style="font-size: 13px; font-weight: 600; color: #111111;"><%= @org_name %></span>
                         </td>
                       </tr>
+                      <% end %>
                       <tr>
                         <td style="padding: 3px 0;">
                           <span style="font-size: 13px; color: #8a8578;"><%= @t[:role] %>: &nbsp;</span>

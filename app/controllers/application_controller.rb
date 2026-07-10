@@ -33,6 +33,13 @@ class ApplicationController < ActionController::API
     render_forbidden and return unless current_user&.agency?
   end
 
+  def require_active_user!
+    return unless current_user
+    return if current_user.status.in?(%w[active pending]) || current_user.platform_admin?
+
+    render json: { error: "account_suspended" }, status: :forbidden
+  end
+
   # --- Renderers ---------------------------------------------------------
 
   def render_error(message, status, details: nil)
@@ -53,9 +60,18 @@ class ApplicationController < ActionController::API
     render_error(exception&.message || "Resource not found", :not_found)
   end
 
-  def render_unprocessable(exception)
-    render_error("Validation failed", :unprocessable_entity,
-                 details: exception.record.errors.full_messages)
+  def render_unprocessable(arg)
+    case arg
+    when ActiveRecord::RecordInvalid
+      render_error("Validation failed", :unprocessable_entity,
+                   details: arg.record.errors.full_messages)
+    when String
+      render_error(arg, :unprocessable_entity)
+    when Array
+      render_error("Validation failed", :unprocessable_entity, details: arg)
+    else
+      render_error("Validation failed", :unprocessable_entity)
+    end
   end
 
   def render_bad_request(exception)

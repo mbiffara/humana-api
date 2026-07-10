@@ -7,6 +7,7 @@ Rails.application.routes.draw do
       # Authentication
       post   "auth/login",  to: "sessions#create"
       get    "auth/me",     to: "sessions#show"
+      patch  "auth/me",     to: "sessions#update"
       delete "auth/logout", to: "sessions#destroy"
 
       # Public discovery (no authentication) — for marketing / unauthenticated surfaces
@@ -27,11 +28,13 @@ Rails.application.routes.draw do
           member { post :resend }
         end
         resources :organizations
+        resources :hotels, only: [:show]
         resources :users, only: %i[index show destroy] do
           collection { post :invite }
           member do
             post :approve
             post :reject
+            post :send_feedback
             post :suspend
             post :reactivate
           end
@@ -51,6 +54,11 @@ Rails.application.routes.draw do
 
       # Agency workspace
       namespace :agency do
+        resource :profile, only: %i[show update]
+      end
+
+      # Office workspace
+      namespace :office do
         resource :profile, only: %i[show update]
       end
 
@@ -77,6 +85,9 @@ Rails.application.routes.draw do
           resources :images, controller: "retreat_images", except: [:show]
         end
       end
+
+      # File uploads (any authenticated user)
+      resources :uploads, only: [:create]
 
       # Discovery
       resources :experiences, only: %i[index show]

@@ -15,6 +15,7 @@ class InvitationMailer < ApplicationMailer
       invited_by: "Invited by",
       role: "Role",
       organization: "Organization",
+      assigned_office_label: "Office",
       expires_label: "Expires",
       expires_value: "7 days",
       cta: "ACCEPT INVITATION",
@@ -36,6 +37,7 @@ class InvitationMailer < ApplicationMailer
       invited_by: "Invitado por",
       role: "Rol",
       organization: "Organización",
+      assigned_office_label: "Oficina",
       expires_label: "Expira en",
       expires_value: "7 días",
       cta: "ACEPTAR INVITACIÓN",
@@ -57,6 +59,7 @@ class InvitationMailer < ApplicationMailer
       invited_by: "Convidado por",
       role: "Função",
       organization: "Organização",
+      assigned_office_label: "Escritório",
       expires_label: "Expira em",
       expires_value: "7 dias",
       cta: "ACEITAR CONVITE",
@@ -79,6 +82,7 @@ class InvitationMailer < ApplicationMailer
     @t = TRANSLATIONS[@locale] || TRANSLATIONS["en"]
     @kind_label = @t[:"kind_#{invitation.organization.kind}"] || invitation.organization.kind.humanize
     @inviter_name = invitation.invited_by&.name || "HUMANA"
+    @assigned_office = invitation.organization.assigned_office
 
     # Embed logo as inline attachment (works in all email clients)
     logo_path = Rails.root.join("app/assets/images/humana-logo-email.png")

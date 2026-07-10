@@ -32,6 +32,7 @@ class Retreat < ApplicationRecord
   scope :in_country, ->(code) { code.present? ? where(country_code: code.upcase) : all }
   scope :featured, -> { where(featured: true) }
   scope :certified, -> { where(certified: true) }
+  scope :in_enabled_country, -> { where(country_code: Country.enabled.select(:code)) }
   scope :search, ->(q) {
     next all if q.blank?
     term = "%#{sanitize_sql_like(q)}%"

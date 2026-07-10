@@ -43,7 +43,8 @@ module Api
         def room_type_params
           params.require(:room_type).permit(
             :name, :category, :capacity, :area_sqm, :price_per_night_cents,
-            :currency, :description, :image_url, :total_rooms, :position
+            :currency, :description, :image_url, :total_rooms, :position,
+            :bed_type
           )
         end
       end

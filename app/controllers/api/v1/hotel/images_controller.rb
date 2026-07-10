@@ -30,7 +30,7 @@ module Api
           images = (params[:images] || []).map.with_index do |img, i|
             current_hotel.hotel_images.create!(
               image_url: img[:image_url],
-              category: img[:category] || "property",
+              category: img[:category] || "general",
               position: i,
               is_cover: i == 0
             )

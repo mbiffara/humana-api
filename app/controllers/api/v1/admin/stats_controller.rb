@@ -8,7 +8,9 @@ module Api
           from_date = params[:from].present? ? Date.parse(params[:from]) : nil
           to_date   = params[:to].present?   ? Date.parse(params[:to])   : nil
 
+          # Only count organizations that have at least one user
           orgs = Organization.where.not(kind: "admin")
+                              .where("EXISTS (SELECT 1 FROM users WHERE users.organization_id = organizations.id)")
           bookings = Booking.all
 
           if from_date
@@ -25,6 +27,11 @@ module Api
           booking_count = bookings.count
           gmv_cents = bookings.sum(:amount_cents)
 
+          # Pending counts per kind (not filtered by date range, only orgs with users)
+          has_users = "EXISTS (SELECT 1 FROM users WHERE users.organization_id = organizations.id)"
+          pending_agencies = Organization.where(kind: "agency", status: "pending").where(has_users).count
+          pending_hotels   = Organization.where(kind: "hotel", status: "pending").where(has_users).count
+
           platform_since = Organization.minimum(:created_at)&.to_date || Date.today
 
           render json: {
@@ -33,6 +40,8 @@ module Api
               hotels: hotels,
               bookings: booking_count,
               gmv_cents: gmv_cents,
+              pending_agencies: pending_agencies,
+              pending_hotels: pending_hotels,
               platform_since: platform_since.iso8601,
             },
           }

@@ -19,11 +19,21 @@ module Api
           return
         end
 
+        org_data = ApiSerializers.organization(@invitation.organization)
+        # Resolve country name + flag from Countries table
+        if org_data[:country_code].present?
+          country_record = Country.find_by(code: org_data[:country_code].upcase)
+          if country_record
+            org_data[:country] = country_record.name
+            org_data[:flag_emoji] = country_record.flag_emoji
+          end
+        end
+
         render json: {
           invitation: {
             email: @invitation.email,
             role: @invitation.role,
-            organization: ApiSerializers.organization(@invitation.organization),
+            organization: org_data,
             expires_at: @invitation.expires_at
           }
         }
@@ -44,15 +54,21 @@ module Api
 
         user_params = params.require(:user).permit(:name, :password, :password_confirmation, :locale)
 
+        # Determine status based on org kind:
+        # - Hotels stay "pending" until admin approves their listing after onboarding
+        # - Agencies/offices become "active" upon accepting the invite
+        org = @invitation.organization
+        accept_status = org.hotel? ? "pending" : "active"
+
         # Update existing pending user (created at invite time) or create new one
-        user = User.find_by(email: @invitation.email, organization: @invitation.organization)
+        user = User.find_by(email: @invitation.email, organization: org)
         if user
           user.assign_attributes(
             name: user_params[:name],
             password: user_params[:password],
             password_confirmation: user_params[:password_confirmation],
             locale: user_params[:locale] || "en",
-            status: "active"
+            status: accept_status
           )
         else
           user = User.new(
@@ -62,8 +78,8 @@ module Api
             password_confirmation: user_params[:password_confirmation],
             locale: user_params[:locale] || "en",
             role: @invitation.role,
-            status: "active",
-            organization: @invitation.organization
+            status: accept_status,
+            organization: org
           )
         end
 

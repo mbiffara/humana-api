@@ -17,11 +17,13 @@ module ApiSerializers
       contact_email: org.contact_email,
       website: org.website,
       onboarding_completed: org.onboarding_completed?,
+      hotel_id: org.hotel? ? org.hotels.first&.id : nil,
       created_at: org.created_at&.iso8601
     }
 
     if include_onboarding
       data.merge!(
+        address: org.address,
         legal_name: org.legal_name,
         phone: org.phone,
         primary_contact: org.primary_contact,
@@ -46,6 +48,7 @@ module ApiSerializers
       role: user.role,
       status: user.status,
       locale: user.locale,
+      phone: user.phone,
       platform_admin: user.platform_admin?,
       last_login_at: user.last_login_at,
       created_at: user.created_at,
@@ -76,12 +79,21 @@ module ApiSerializers
     base.merge(
       description: hotel.description,
       address: hotel.try(:address),
+      postal_code: hotel.try(:postal_code),
+      phone: hotel.phone,
+      stars: hotel.stars,
+      total_rooms: hotel.total_rooms,
+      check_in_time: hotel.check_in_time,
+      check_out_time: hotel.check_out_time,
+      logo_url: hotel.logo_url,
+      website: hotel.website,
+      contact_email: hotel.contact_email,
       room_types: hotel.room_types.ordered.map { |rt| room_type(rt) },
       amenities: hotel.hotel_amenities.order(:category, :position).map { |a|
-        { id: a.id, name: a.name, category: a.category, icon: a.icon, position: a.position }
+        { id: a.id, name: a.name, category: a.category, icon: a.icon, position: a.position, featured: a.featured }
       },
       images: hotel.hotel_images.order(:position).map { |i|
-        { id: i.id, image_url: i.image_url, category: i.category, position: i.position, is_cover: i.is_cover }
+        { id: i.id, image_url: i.image_url, category: i.category, position: i.position, is_cover: i.is_cover, alt_text: i.alt_text }
       }
     )
   end
@@ -205,7 +217,10 @@ module ApiSerializers
       description: rt.description,
       image_url: rt.image_url,
       total_rooms: rt.total_rooms,
-      position: rt.position
+      position: rt.position,
+      bed_type: rt.bed_type,
+      view_type: rt.view_type,
+      amenities_list: rt.amenities
     }
   end
 

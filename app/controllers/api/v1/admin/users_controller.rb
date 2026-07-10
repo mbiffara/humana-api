@@ -4,7 +4,7 @@ module Api
   module V1
     module Admin
       class UsersController < BaseController
-        before_action :set_user, only: %i[show approve reject suspend reactivate destroy]
+        before_action :set_user, only: %i[show approve reject send_feedback suspend reactivate destroy]
 
         # GET /api/v1/admin/users
         # Filters: status, role, kind (org kind), organization_id, q (name/email search)
@@ -39,6 +39,11 @@ module Api
                   kind: org.kind
                 }
               end
+              if inv
+                data[:invitation_id] = inv.id
+                data[:invitation_accepted] = inv.accepted_at.present?
+                data[:invited_at] = inv.created_at&.iso8601
+              end
               data
             },
             meta: meta
@@ -53,7 +58,7 @@ module Api
         # POST /api/v1/admin/users/invite
         # Creates an Invitation record, a pending User record, and sends a magic-link email.
         def invite
-          inv_params = params.require(:invitation).permit(:email, :role, :organization_id, :org_name, :org_kind, :assigned_office_id)
+          inv_params = params.require(:invitation).permit(:email, :role, :organization_id, :org_name, :org_kind, :assigned_office_id, :country_code)
           email = inv_params[:email].to_s.strip.downcase
           role = inv_params[:role] || "owner"
 
@@ -75,11 +80,21 @@ module Api
           org = if inv_params[:organization_id].present?
                   Organization.find(inv_params[:organization_id])
                 else
-                  Organization.create!(
+                  org_attrs = {
                     name: inv_params[:org_name] || "#{email.split('@').first.titleize} Org",
                     kind: inv_params[:org_kind] || "agency",
                     status: "pending"
-                  )
+                  }
+                  if inv_params[:country_code].present?
+                    org_attrs[:country_code] = inv_params[:country_code]
+                    country_record = Country.find_by(code: inv_params[:country_code].upcase)
+                    org_attrs[:country] = country_record&.name || inv_params[:country_code]
+                  end
+                  new_org = Organization.create!(org_attrs)
+                  if inv_params[:assigned_office_id].present?
+                    new_org.update!(assigned_office_id: inv_params[:assigned_office_id])
+                  end
+                  new_org
                 end
 
           invitation = Invitation.new(
@@ -92,7 +107,7 @@ module Api
 
           # Also create a pending User so it appears in the admin network list
           temp_password = SecureRandom.hex(16)
-          User.find_or_create_by!(email: email) do |u|
+          user = User.find_or_create_by!(email: email) do |u|
             u.name = email.split("@").first.titleize
             u.password = temp_password
             u.password_confirmation = temp_password
@@ -101,38 +116,113 @@ module Api
             u.status = "pending"
           end
 
-          InvitationMailer.invite(invitation).deliver_now
+          # Auto-approve logic:
+          # - Admin invites agency/office → auto-approve (user active, org verified)
+          # - Admin invites hotel → stays pending (requires listing review)
+          # - Office invites anyone → stays pending (requires admin review)
+          inviter_is_admin = current_user.organization.admin?
+          if inviter_is_admin && org.kind != "hotel"
+            user.update!(status: "active")
+            org.update!(status: "verified") if org.status == "pending"
+          end
+
+          # Deliver the invitation email. If delivery fails (e.g. Resend domain
+          # not verified in dev), log the error but don't crash the request —
+          # the invitation record is already created and the magic link works.
+          begin
+            InvitationMailer.invite(invitation).deliver_now
+          rescue StandardError => e
+            Rails.logger.warn("[InvitationMailer] Email delivery failed: #{e.message}")
+            Rails.logger.info("[InvitationMailer] Magic link for #{email}: #{invitation.magic_link}")
+          end
+
           render json: { invitation: serialize_invitation(invitation) }, status: :created
         end
 
         # POST /api/v1/admin/users/:id/approve
         def approve
           @user.update!(status: "active")
+          @user.organization&.update!(status: "verified") if @user.organization&.status == "pending"
+
+          begin
+            ModerationMailer.approved(@user).deliver_now
+            ModerationMailer.office_notification(@user, "approved").deliver_now
+          rescue StandardError => e
+            Rails.logger.warn("[ModerationMailer] Delivery failed: #{e.message}")
+          end
+
           render json: { user: ApiSerializers.user(@user).merge(status: @user.status) }
         end
 
         # POST /api/v1/admin/users/:id/reject
         def reject
+          reason = params[:reason].to_s.strip
           @user.update!(status: "rejected")
+
+          begin
+            ModerationMailer.rejected(@user, reason).deliver_now
+            ModerationMailer.office_notification(@user, "rejected", reason).deliver_now
+          rescue StandardError => e
+            Rails.logger.warn("[ModerationMailer] Delivery failed: #{e.message}")
+          end
+
+          render json: { user: ApiSerializers.user(@user).merge(status: @user.status) }
+        end
+
+        # POST /api/v1/admin/users/:id/send_feedback
+        # Sends feedback email to a hotel without changing their status.
+        def send_feedback
+          message = params[:message].to_s.strip
+          return render json: { error: "Message is required" }, status: :unprocessable_entity if message.blank?
+
+          begin
+            ModerationMailer.feedback(@user, message).deliver_now
+          rescue StandardError => e
+            Rails.logger.warn("[ModerationMailer] Feedback delivery failed: #{e.message}")
+          end
+
           render json: { user: ApiSerializers.user(@user).merge(status: @user.status) }
         end
 
         # POST /api/v1/admin/users/:id/suspend
         def suspend
           @user.update!(status: "suspended")
+
+          begin
+            ModerationMailer.suspended(@user).deliver_now
+          rescue StandardError => e
+            Rails.logger.warn("[ModerationMailer] Suspend notification failed: #{e.message}")
+          end
+
           render json: { user: ApiSerializers.user(@user).merge(status: @user.status) }
         end
 
         # POST /api/v1/admin/users/:id/reactivate
         def reactivate
           @user.update!(status: "active")
+
+          begin
+            ModerationMailer.reactivated(@user).deliver_now
+          rescue StandardError => e
+            Rails.logger.warn("[ModerationMailer] Reactivation notification failed: #{e.message}")
+          end
+
           render json: { user: ApiSerializers.user(@user).merge(status: @user.status) }
         end
 
         # DELETE /api/v1/admin/users/:id
-        # Permanently deletes the user and their associated invitation.
+        # Permanently deletes the user, their invitation, and the org if it becomes empty.
         def destroy
+          org = @user.organization
+          Invitation.where(email: @user.email).destroy_all
+          Invitation.where(invited_by_id: @user.id).update_all(invited_by_id: current_user.id)
           @user.destroy!
+
+          # Clean up orphaned organization (if last user and not the admin org)
+          if org && !org.admin? && org.users.count == 0
+            org.destroy!
+          end
+
           head :no_content
         end
 

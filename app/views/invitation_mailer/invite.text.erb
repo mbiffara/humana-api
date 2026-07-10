@@ -7,7 +7,7 @@ HUMANA Global
 
 <%= @t[:body] %>
 
-<%= @t[:organization] %>: <%= @org_name %>
+<% if @assigned_office %><%= @t[:assigned_office_label] %>: <%= @assigned_office.name %><% else %><%= @t[:organization] %>: <%= @org_name %><% end %>
 <%= @t[:role] %>: <%= @kind_label %>
 <%= @t[:invited_by] %>: <%= @inviter_name %>
 <%= @t[:expires_label] %>: <%= @t[:expires_value] %>

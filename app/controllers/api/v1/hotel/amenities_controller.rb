@@ -18,6 +18,7 @@ module Api
               name: a[:name],
               category: a[:category] || "general",
               icon: a[:icon],
+              featured: a[:featured] || false,
               position: i
             )
           end

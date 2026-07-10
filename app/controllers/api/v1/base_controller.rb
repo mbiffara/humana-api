@@ -4,6 +4,7 @@ module Api
     # before_action for public routes (e.g. login, public experience listing).
     class BaseController < ApplicationController
       before_action :authenticate_user!
+      before_action :require_active_user!
 
       private
 

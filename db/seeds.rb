@@ -207,11 +207,11 @@ plans_data = [
   { name: "Starter", price_cents: 0, commission_rate: 0.16, trial_days: 14, position: 0,
     target_audience: "agency",
     features: { max_bookings: 10, max_clients: 50, support: "email", analytics: "basic" } },
-  { name: "Professional", price_cents: 9900, commission_rate: 0.14, trial_days: 14, position: 1,
+  { name: "Professional", price_cents: 9900, commission_rate: 0.16, trial_days: 14, position: 1,
     target_audience: "agency",
     features: { max_bookings: -1, max_clients: -1, support: "priority", analytics: "advanced",
                 custom_branding: true, api_access: true } },
-  { name: "Enterprise", price_cents: 29900, commission_rate: 0.12, trial_days: 30, position: 2,
+  { name: "Enterprise", price_cents: 29900, commission_rate: 0.16, trial_days: 30, position: 2,
     target_audience: "agency",
     features: { max_bookings: -1, max_clients: -1, support: "dedicated", analytics: "full",
                 custom_branding: true, api_access: true, white_label: true, sla: "99.9%" } }
@@ -466,6 +466,154 @@ pending_orgs_data.each do |attrs|
     o.contact_email = attrs[:contact_email]
     o.created_at = attrs[:days_ago].days.ago
   end
+end
+
+# --- Office-invited users (require admin approval) --------------------------
+# These simulate invitations sent by office managers, NOT by the admin.
+# All should be pending in the network page, requiring admin review.
+
+office_user = User.find_by(email: "office@humana.global")
+
+office_invited_data = [
+  { email: "carlos@aventurazen.mx", role: "owner", org_kind: "agency", org_name: "Aventura Zen Travel",
+    city: "Guadalajara", country: "Mexico", country_code: "MX", days_ago: 2,
+    user_name: "Carlos Méndez", status: "pending" },
+  { email: "ana@hotelceleste.mx", role: "owner", org_kind: "hotel", org_name: "Hotel Celeste",
+    city: "Oaxaca", country: "Mexico", country_code: "MX", days_ago: 4,
+    user_name: "Ana Lucía Reyes", status: "pending" },
+  { email: "pedro@bienestarviajes.mx", role: "owner", org_kind: "agency", org_name: "Bienestar Viajes",
+    city: "Monterrey", country: "Mexico", country_code: "MX", days_ago: 1,
+    user_name: "Pedro Salinas", status: "pending" },
+  { email: "maria@casasol.mx", role: "owner", org_kind: "hotel", org_name: "Casa Sol Wellness",
+    city: "San Miguel de Allende", country: "Mexico", country_code: "MX", days_ago: 6,
+    user_name: "María del Sol García", status: "pending" },
+]
+
+if office_user
+  office_invited_data.each do |attrs|
+    org = Organization.find_or_create_by!(name: attrs[:org_name]) do |o|
+      o.kind = attrs[:org_kind]
+      o.status = "pending"
+      o.city = attrs[:city]
+      o.country = attrs[:country]
+      o.country_code = attrs[:country_code]
+    end
+
+    temp_pw = SecureRandom.hex(16)
+    User.find_or_initialize_by(email: attrs[:email]).tap do |u|
+      u.organization = org
+      u.name = attrs[:user_name]
+      u.role = attrs[:role]
+      u.locale = "es"
+      u.status = attrs[:status]
+      u.password = temp_pw if u.new_record?
+      u.save!
+    end
+
+    unless Invitation.exists?(email: attrs[:email])
+      Invitation.create!(
+        email: attrs[:email],
+        role: attrs[:role],
+        organization: org,
+        invited_by: office_user,
+        created_at: attrs[:days_ago].days.ago,
+        expires_at: (7 - attrs[:days_ago]).days.from_now
+      )
+    end
+  end
+end
+
+# --- Pending hotel with COMPLETE onboarding (for admin approval testing) ------
+# This hotel was invited by admin, completed its 4-step onboarding,
+# and is now pending admin review/approval.
+pending_hotel_org = Organization.find_or_create_by!(name: "Alma Verde Wellness") do |o|
+  o.kind = "hotel"
+  o.status = "pending"
+  o.city = "San José"
+  o.country = "Costa Rica"
+  o.country_code = "CR"
+  o.contact_email = "info@almaverde.cr"
+  o.website = "https://almaverde.cr"
+  o.onboarding_completed_at = 2.days.ago
+end
+# Ensure onboarding_completed_at is set even if org already exists
+pending_hotel_org.update!(onboarding_completed_at: 2.days.ago) unless pending_hotel_org.onboarding_completed?
+
+pending_hotel_user = User.find_or_initialize_by(email: "hotel@almaverde.cr").tap do |u|
+  u.organization = pending_hotel_org
+  u.name = "Sofía Montero"
+  u.role = "owner"
+  u.locale = "es"
+  u.status = "pending"
+  u.password = "humana1234" if u.new_record?
+  u.save!
+end
+
+pending_hotel = Hotel.find_or_create_by!(organization: pending_hotel_org, name: "Alma Verde Retreat Center") do |h|
+  h.city = "San José"
+  h.country = "Costa Rica"
+  h.country_code = "CR"
+  h.latitude = 9.9281
+  h.longitude = -84.0907
+  h.description = "A boutique wellness center nestled in the cloud forests of Costa Rica. " \
+                  "Specializing in plant medicine, breathwork, and holistic nutrition programs " \
+                  "with panoramic views of the Central Valley."
+  h.address = "Calle Los Helechos 42, Escazú"
+  h.wellness_standard = "Global Wellness Institute"
+  h.certified = true
+  h.stars = 4
+  h.total_rooms = 18
+  h.phone = "+506 2201 4567"
+  h.check_in_time = "15:00"
+  h.check_out_time = "11:00"
+  h.onboarding_completed_at = 2.days.ago
+end
+pending_hotel.update!(onboarding_completed_at: 2.days.ago) unless pending_hotel.onboarding_completed?
+
+# Room types
+if pending_hotel.room_types.empty?
+  [
+    { name: "Forest Room", category: "standard", capacity: 2, area_sqm: 26,
+      price_per_night_cents: 15000, position: 0,
+      description: "Cozy room with floor-to-ceiling windows overlooking the cloud forest canopy." },
+    { name: "Valley Suite", category: "suite", capacity: 2, area_sqm: 42,
+      price_per_night_cents: 28000, position: 1,
+      description: "Spacious suite with private balcony, outdoor shower, and Central Valley views." },
+    { name: "Canopy Villa", category: "villa", capacity: 4, area_sqm: 78,
+      price_per_night_cents: 48000, position: 2,
+      description: "Two-bedroom villa with private plunge pool surrounded by tropical gardens." }
+  ].each do |attrs|
+    pending_hotel.room_types.create!(attrs.merge(currency: "USD"))
+  end
+end
+
+# Amenities
+if pending_hotel.hotel_amenities.empty?
+  [
+    { name: "Yoga Shala", category: "wellness", position: 0, featured: true },
+    { name: "Meditation Garden", category: "wellness", position: 1, featured: true },
+    { name: "Infinity Pool", category: "facilities", position: 2, featured: true },
+    { name: "Organic Restaurant", category: "dining", position: 3, featured: true },
+    { name: "Spa & Massage", category: "wellness", position: 4, featured: false },
+    { name: "Herbal Steam Room", category: "wellness", position: 5, featured: false },
+    { name: "Library", category: "facilities", position: 6, featured: false },
+    { name: "Free Wi-Fi", category: "facilities", position: 7, featured: false },
+  ].each do |attrs|
+    pending_hotel.hotel_amenities.create!(attrs)
+  end
+end
+
+# Create invitation from admin
+unless Invitation.exists?(email: "hotel@almaverde.cr")
+  Invitation.create!(
+    email: "hotel@almaverde.cr",
+    role: "owner",
+    organization: pending_hotel_org,
+    invited_by: admin_user,
+    created_at: 5.days.ago,
+    expires_at: 2.days.from_now,
+    accepted_at: 4.days.ago
+  )
 end
 
 puts "Done."

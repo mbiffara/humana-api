@@ -12,6 +12,7 @@ class Hotel < ApplicationRecord
   scope :certified, -> { where(certified: true) }
   scope :in_country, ->(code) { code.present? ? where(country_code: code.upcase) : all }
   scope :onboarded, -> { where.not(onboarding_completed_at: nil) }
+  scope :in_enabled_country, -> { where(country_code: Country.enabled.select(:code)) }
   scope :search, ->(q) {
     next all if q.blank?
 

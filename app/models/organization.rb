@@ -10,6 +10,7 @@ class Organization < ApplicationRecord
   has_many :subscriptions, dependent: :destroy
   has_one :stripe_connect_account, dependent: :destroy
   has_many :created_retreats, class_name: "Retreat", foreign_key: :created_by_organization_id, dependent: :nullify
+  belongs_to :assigned_office, class_name: "Organization", optional: true
 
   validates :name, presence: true
   validates :kind, inclusion: { in: KINDS }

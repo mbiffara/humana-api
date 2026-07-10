@@ -3,6 +3,7 @@ module Api
     # Email + password login that returns a JWT, plus the authenticated user.
     class SessionsController < BaseController
       skip_before_action :authenticate_user!, only: :create
+      skip_before_action :require_active_user!, only: %i[create show]
 
       # POST /api/v1/auth/login
       def create
@@ -22,6 +23,12 @@ module Api
         render json: { user: ApiSerializers.user(current_user) }
       end
 
+      # PATCH /api/v1/auth/me
+      def update
+        current_user.update!(profile_params)
+        render json: { user: ApiSerializers.user(current_user) }
+      end
+
       # DELETE /api/v1/auth/logout
       # Tokens are stateless; the client simply discards it.
       def destroy
@@ -32,6 +39,10 @@ module Api
 
       def login_params
         params.require(:auth).permit(:email, :password)
+      end
+
+      def profile_params
+        params.require(:user).permit(:name)
       end
     end
   end
