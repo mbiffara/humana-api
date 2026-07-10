@@ -44,7 +44,7 @@ admin_org = Organization.find_or_create_by!(name: "HUMANA Global") do |o|
   o.kind = "admin"
   o.status = "verified"
   o.city = "Madrid"
-  o.country = "Spain"
+  o.country = "España"
   o.country_code = "ES"
   o.contact_email = "ops@humana.global"
 end
@@ -70,30 +70,26 @@ end
 
 # --- Countries ---------------------------------------------------------------
 countries_data = [
-  { name: "Spain", code: "ES", flag_emoji: "\u{1F1EA}\u{1F1F8}", region: "Europe", currency_code: "EUR", timezone: "Europe/Madrid" },
-  { name: "Mexico", code: "MX", flag_emoji: "\u{1F1F2}\u{1F1FD}", region: "LATAM", currency_code: "MXN", timezone: "America/Mexico_City" },
-  { name: "Singapore", code: "SG", flag_emoji: "\u{1F1F8}\u{1F1EC}", region: "APAC", currency_code: "SGD", timezone: "Asia/Singapore" },
+  { name: "España", code: "ES", flag_emoji: "\u{1F1EA}\u{1F1F8}", region: "Europe", currency_code: "EUR", timezone: "Europe/Madrid" },
+  { name: "México", code: "MX", flag_emoji: "\u{1F1F2}\u{1F1FD}", region: "LATAM", currency_code: "MXN", timezone: "America/Mexico_City" },
+  { name: "Singapur", code: "SG", flag_emoji: "\u{1F1F8}\u{1F1EC}", region: "APAC", currency_code: "SGD", timezone: "Asia/Singapore" },
   { name: "Indonesia", code: "ID", flag_emoji: "\u{1F1EE}\u{1F1E9}", region: "APAC", currency_code: "IDR", timezone: "Asia/Jakarta" },
   { name: "Costa Rica", code: "CR", flag_emoji: "\u{1F1E8}\u{1F1F7}", region: "LATAM", currency_code: "CRC", timezone: "America/Costa_Rica" },
   { name: "Portugal", code: "PT", flag_emoji: "\u{1F1F5}\u{1F1F9}", region: "Europe", currency_code: "EUR", timezone: "Europe/Lisbon" },
-  { name: "Thailand", code: "TH", flag_emoji: "\u{1F1F9}\u{1F1ED}", region: "APAC", currency_code: "THB", timezone: "Asia/Bangkok" },
-  { name: "Peru", code: "PE", flag_emoji: "\u{1F1F5}\u{1F1EA}", region: "LATAM", currency_code: "PEN", timezone: "America/Lima" },
+  { name: "Tailandia", code: "TH", flag_emoji: "\u{1F1F9}\u{1F1ED}", region: "APAC", currency_code: "THB", timezone: "Asia/Bangkok" },
+  { name: "Perú", code: "PE", flag_emoji: "\u{1F1F5}\u{1F1EA}", region: "LATAM", currency_code: "PEN", timezone: "America/Lima" },
   { name: "Colombia", code: "CO", flag_emoji: "\u{1F1E8}\u{1F1F4}", region: "LATAM", currency_code: "COP", timezone: "America/Bogota" },
-  { name: "Italy", code: "IT", flag_emoji: "\u{1F1EE}\u{1F1F9}", region: "Europe", currency_code: "EUR", timezone: "Europe/Rome" },
-  { name: "Greece", code: "GR", flag_emoji: "\u{1F1EC}\u{1F1F7}", region: "Europe", currency_code: "EUR", timezone: "Europe/Athens" },
+  { name: "Italia", code: "IT", flag_emoji: "\u{1F1EE}\u{1F1F9}", region: "Europe", currency_code: "EUR", timezone: "Europe/Rome" },
+  { name: "Grecia", code: "GR", flag_emoji: "\u{1F1EC}\u{1F1F7}", region: "Europe", currency_code: "EUR", timezone: "Europe/Athens" },
   { name: "India", code: "IN", flag_emoji: "\u{1F1EE}\u{1F1F3}", region: "APAC", currency_code: "INR", timezone: "Asia/Kolkata" }
 ]
 
 countries_data.each do |attrs|
-  Country.find_or_create_by!(code: attrs[:code]) do |c|
-    c.name = attrs[:name]
-    c.flag_emoji = attrs[:flag_emoji]
-    c.region = attrs[:region]
-    c.currency_code = attrs[:currency_code]
-    c.timezone = attrs[:timezone]
-    c.status = "active"
-    c.enabled = true
-  end
+  country = Country.find_or_initialize_by(code: attrs[:code])
+  country.assign_attributes(attrs.except(:code))
+  country.status = "active"
+  country.enabled = true
+  country.save!
 end
 
 # --- Subscription plans ------------------------------------------------------
