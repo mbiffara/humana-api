@@ -1,5 +1,3 @@
-# Simple file upload endpoint — saves to public/uploads/ and returns a URL.
-# Served as static assets by Puma/Rails. In production, swap for S3/CDN.
 module Api
   module V1
     class UploadsController < BaseController
@@ -9,7 +7,7 @@ module Api
       # POST /api/v1/uploads
       # Content-Type: multipart/form-data
       # Body: file=<binary>
-      # Returns: { url: "http://localhost:4000/uploads/<uuid>.ext" }
+      # Returns: { url: "<s3 or local url>" }
       def create
         file = params[:file]
 
@@ -26,15 +24,46 @@ module Api
         end
 
         ext = File.extname(file.original_filename).downcase.presence || ".jpg"
-        filename = "#{SecureRandom.uuid}#{ext}"
+        filename = "uploads/#{SecureRandom.uuid}#{ext}"
 
+        if s3_configured?
+          url = upload_to_s3(file, filename)
+        else
+          url = upload_to_local(file, filename)
+        end
+
+        render json: { url: url }, status: :created
+      end
+
+      private
+
+      def s3_configured?
+        ENV["AWS_BUCKET"].present?
+      end
+
+      def upload_to_s3(file, key)
+        require "aws-sdk-s3"
+
+        bucket = ENV.fetch("AWS_BUCKET")
+        region = ENV.fetch("AWS_REGION", "us-east-1")
+
+        client = Aws::S3::Client.new(region: region)
+        client.put_object(
+          bucket: bucket,
+          key: key,
+          body: file.read,
+          content_type: file.content_type
+        )
+
+        "https://#{bucket}.s3.#{region}.amazonaws.com/#{key}"
+      end
+
+      def upload_to_local(file, key)
+        local_filename = File.basename(key)
         upload_dir = Rails.root.join("public", "uploads")
         FileUtils.mkdir_p(upload_dir)
-
-        File.open(upload_dir.join(filename), "wb") { |f| f.write(file.read) }
-
-        url = "#{request.protocol}#{request.host_with_port}/uploads/#{filename}"
-        render json: { url: url }, status: :created
+        File.open(upload_dir.join(local_filename), "wb") { |f| f.write(file.read) }
+        "#{request.protocol}#{request.host_with_port}/uploads/#{local_filename}"
       end
     end
   end
