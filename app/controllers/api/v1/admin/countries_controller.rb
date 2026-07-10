@@ -51,12 +51,20 @@ module Api
             return render json: { error: "Confirmation text does not match" }, status: :unprocessable_entity
           end
 
-          # Cascade: destroy organizations, hotels, experiences, retreats in this country
+          # Cascade: remove all data linked to this country
           ActiveRecord::Base.transaction do
-            Organization.where(country_code: country.code).destroy_all
-            Hotel.where(country_code: country.code).destroy_all
-            Retreat.where(country_code: country.code).destroy_all
+            orgs = Organization.where(country_code: country.code)
+            org_ids = orgs.pluck(:id)
+            user_ids = User.where(organization_id: org_ids).pluck(:id)
+
+            # Nullify invited_by references before destroying users
+            Invitation.where(invited_by_id: user_ids).update_all(invited_by_id: nil)
+
+            # Destroy dependents in safe order
             Experience.where(country_code: country.code).destroy_all
+            Retreat.where(country_code: country.code).destroy_all
+            Hotel.where(country_code: country.code).destroy_all
+            orgs.destroy_all
             country.destroy!
           end
 
