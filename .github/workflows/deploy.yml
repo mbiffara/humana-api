@@ -12,7 +12,7 @@ concurrency:
   cancel-in-progress: false
 
 env:
-  AWS_REGION: us-east-2
+  AWS_REGION: us-east-1
   ECR_REPOSITORY: humana/humana-api
   ECS_CLUSTER: humana-api-cluster
   ECS_SERVICE: humana-api-service
