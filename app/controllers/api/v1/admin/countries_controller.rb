@@ -45,9 +45,9 @@ module Api
             return render json: { error: "Invalid password" }, status: :forbidden
           end
 
-          # Require confirmation text
-          expected = country.name
-          unless params[:confirmation_text].to_s.strip == expected
+          # Require confirmation text (case-insensitive)
+          expected = country.name.downcase
+          unless params[:confirmation_text].to_s.strip.downcase == expected
             return render json: { error: "Confirmation text does not match" }, status: :unprocessable_entity
           end
 
@@ -60,15 +60,33 @@ module Api
             # Nullify invited_by references before destroying users
             Invitation.where(invited_by_id: user_ids).update_all(invited_by_id: nil)
 
-            # Destroy dependents in safe order
-            Experience.where(country_code: country.code).destroy_all
-            Retreat.where(country_code: country.code).destroy_all
-            Hotel.where(country_code: country.code).destroy_all
-            orgs.destroy_all
+            # Delete dependents in safe order (skip callbacks for speed)
+            Booking.where(organization_id: org_ids).delete_all
+            Client.where(organization_id: org_ids).delete_all
+            Experience.where(country_code: country.code).delete_all
+            RetreatImage.joins(:retreat).where(retreats: { country_code: country.code }).delete_all
+            RetreatPricing.joins(:retreat).where(retreats: { country_code: country.code }).delete_all
+            RetreatInclusion.joins(:retreat).where(retreats: { country_code: country.code }).delete_all
+            RetreatFacilitator.joins(:retreat).where(retreats: { country_code: country.code }).delete_all
+            RetreatActivity.joins(retreat_day: :retreat).where(retreats: { country_code: country.code }).delete_all
+            RetreatDay.joins(:retreat).where(retreats: { country_code: country.code }).delete_all
+            Retreat.where(country_code: country.code).delete_all
+            RoomImage.joins(:room_type).where(room_types: { hotel_id: Hotel.where(country_code: country.code).select(:id) }).delete_all
+            RoomType.where(hotel_id: Hotel.where(country_code: country.code).select(:id)).delete_all
+            HotelAmenity.where(hotel_id: Hotel.where(country_code: country.code).select(:id)).delete_all
+            HotelImage.where(hotel_id: Hotel.where(country_code: country.code).select(:id)).delete_all
+            Hotel.where(country_code: country.code).delete_all
+            Subscription.where(organization_id: org_ids).delete_all
+            StripeConnectAccount.where(organization_id: org_ids).delete_all
+            Invitation.where(organization_id: org_ids).delete_all
+            User.where(organization_id: org_ids).delete_all
+            orgs.delete_all
             country.destroy!
           end
 
           head :no_content
+        rescue => e
+          render json: { error: e.message }, status: :internal_server_error
         end
 
         private
