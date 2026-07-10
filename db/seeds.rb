@@ -3,8 +3,41 @@
 # through the app itself (invitations, onboarding, etc.).
 #
 # Idempotent: safe to run repeatedly via `bin/rails db:seed`.
+# Runs automatically on every deploy via bin/docker-entrypoint.
 
 puts "Seeding HUMANA platform essentials..."
+
+# --- Purge old demo/seed data (one-time cleanup) ----------------------------
+# Safe: only deletes data that was created by the old seeds.
+# After this runs once, subsequent deploys skip it (nothing to delete).
+admin_org_id = Organization.find_by(kind: "admin")&.id
+admin_user_ids = admin_org_id ? User.where(organization_id: admin_org_id).pluck(:id) : []
+
+non_admin_orgs = Organization.where.not(id: admin_org_id)
+if non_admin_orgs.exists?
+  puts "  Purging old seed data..."
+  Booking.delete_all
+  Client.delete_all
+  Experience.delete_all
+  RetreatActivity.delete_all
+  RetreatDay.delete_all
+  RetreatFacilitator.delete_all
+  RetreatInclusion.delete_all
+  RetreatPricing.delete_all
+  RetreatImage.delete_all
+  Retreat.delete_all
+  RoomImage.delete_all
+  RoomType.delete_all
+  HotelAmenity.delete_all
+  HotelImage.delete_all
+  Hotel.delete_all
+  Subscription.delete_all
+  StripeConnectAccount.delete_all
+  Invitation.delete_all
+  User.where.not(id: admin_user_ids).delete_all
+  non_admin_orgs.delete_all
+  puts "  Done purging."
+end
 
 # --- Platform admin ----------------------------------------------------------
 admin_org = Organization.find_or_create_by!(name: "HUMANA Global") do |o|
