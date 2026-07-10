@@ -1,0 +1,39 @@
+# Ruby / Bundler
+/.bundle
+/vendor/bundle
+
+# Environment
+.env
+.env.*
+!.env.example
+
+# Logs
+/log/*
+!/log/.keep
+
+# Temp files
+/tmp/*
+!/tmp/.keep
+!/tmp/pids
+/tmp/pids/*
+!/tmp/pids/.keep
+
+# Storage
+/storage/*
+!/storage/.keep
+
+# Node (if any)
+/node_modules
+
+# OS
+.DS_Store
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Public uploads (user-generated)
+/public/uploads/*
+!/public/uploads/.keep

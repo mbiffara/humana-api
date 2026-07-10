@@ -6,6 +6,7 @@ module Api
       # GET /api/v1/coverage
       def index
         rows = Experience.published
+                         .in_enabled_country
                          .joins(:hotel)
                          .group(:country_code, :country)
                          .pluck(

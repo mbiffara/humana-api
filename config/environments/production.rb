@@ -37,6 +37,9 @@ Rails.application.configure do
   # Prevent health checks from clogging up the logs.
   config.silence_healthcheck_path = "/up"
 
+  # Active Storage: use Amazon S3 in production.
+  config.active_storage.service = :amazon
+
   # Don't log any deprecations.
   config.active_support.report_deprecations = false
 
@@ -50,8 +53,14 @@ Rails.application.configure do
   # Set this to true and configure the email server for immediate delivery to raise delivery errors.
   # config.action_mailer.raise_delivery_errors = false
 
-  # Set host to be used by links generated in mailer templates.
-  config.action_mailer.default_url_options = { host: "example.com" }
+  # Deliver via Resend in production.
+  config.action_mailer.delivery_method = :resend
+  config.action_mailer.raise_delivery_errors = true
+
+  # Set host for links generated in mailer templates.
+  config.action_mailer.default_url_options = {
+    host: ENV.fetch("HUMANA_WEB_URL", "https://humana.global")
+  }
 
   # Specify outgoing SMTP server. Remember to add smtp/* credentials via bin/rails credentials:edit.
   # config.action_mailer.smtp_settings = {

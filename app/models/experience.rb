@@ -17,6 +17,7 @@ class Experience < ApplicationRecord
   scope :published, -> { where(status: %w[active upcoming]) }
   scope :by_kind, ->(kind) { kind.present? ? where(kind: kind) : all }
   scope :in_country, ->(code) { code.present? ? where(country_code: code.upcase) : all }
+  scope :in_enabled_country, -> { where(country_code: Country.enabled.select(:code)) }
   scope :search, ->(q) {
     next all if q.blank?
 

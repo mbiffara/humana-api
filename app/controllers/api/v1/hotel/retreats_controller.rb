@@ -1,0 +1,72 @@
+# Hotel-scoped retreat management. Allows hotel owners to create, edit,
+# and manage retreats hosted at their property, including the full program
+# (days, activities, facilitators, inclusions, pricing, images).
+module Api
+  module V1
+    module Hotel
+      class RetreatsController < BaseController
+        def index
+          scope = current_hotel.retreats
+          scope = scope.by_status(params[:status]) if params[:status].present?
+
+          retreats = scope.order(created_at: :desc)
+          render json: { retreats: retreats.map { |r| ApiSerializers.retreat(r, include_details: false) } }
+        end
+
+        def show
+          retreat = current_hotel.retreats.find(params[:id])
+          render json: { retreat: ApiSerializers.retreat(retreat) }
+        end
+
+        def create
+          retreat = current_hotel.retreats.build(retreat_params)
+          retreat.created_by_organization = current_organization
+          retreat.created_by_type = "hotel"
+
+          if retreat.save
+            render json: { retreat: ApiSerializers.retreat(retreat) }, status: :created
+          else
+            render_unprocessable(retreat.errors.full_messages)
+          end
+        end
+
+        def update
+          retreat = current_hotel.retreats.find(params[:id])
+          if retreat.update(retreat_params)
+            render json: { retreat: ApiSerializers.retreat(retreat) }
+          else
+            render_unprocessable(retreat.errors.full_messages)
+          end
+        end
+
+        def destroy
+          retreat = current_hotel.retreats.find(params[:id])
+          retreat.destroy!
+          head :no_content
+        end
+
+        # Submit a draft retreat for admin review
+        def submit_for_review
+          retreat = current_hotel.retreats.find(params[:id])
+          if retreat.status == "draft"
+            retreat.update!(status: "pending_review")
+            render json: { retreat: ApiSerializers.retreat(retreat, include_details: false) }
+          else
+            render json: { error: "Only draft retreats can be submitted for review" }, status: :unprocessable_entity
+          end
+        end
+
+        private
+
+        def retreat_params
+          params.require(:retreat).permit(
+            :name, :retreat_type, :duration_nights, :starts_on, :ends_on,
+            :capacity, :language, :description, :short_description, :location,
+            :country, :country_code, :currency, :commission_rate, :cover_image_url,
+            :certified
+          )
+        end
+      end
+    end
+  end
+end

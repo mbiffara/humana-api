@@ -1,0 +1,17 @@
+HUMANA Global
+===========================
+
+<%= @decision == "approved" ? @t[:office_approved_title] : @t[:office_rejected_title] %>
+
+<%= @t[:office_user_label] %>: <%= @user.name %> (<%= @user.email %>)
+<%= @t[:office_decision_label] %>: <%= @decision == "approved" ? @t[:office_decision_approved] : @t[:office_decision_rejected] %>
+<% if @reason.present? %>
+<%= @t.dig(:rejected_reason_label) || "Reason" %>: <%= @reason %>
+<% end %>
+<% if @decision == "rejected" %>
+
+<%= @t[:office_rejected_instruction] %>
+<% end %>
+
+---
+<%= @t[:footer_brand] %>

@@ -5,7 +5,8 @@ module Api
       class HotelsController < Api::V1::PublicController
         # GET /api/v1/public/hotels?country=ES&q=ibiza&certified=true
         def index
-          scope = Hotel.in_country(params[:country])
+          scope = Hotel.in_enabled_country
+                       .in_country(params[:country])
                        .search(params[:q])
                        .order(:name)
           scope = scope.certified if ActiveModel::Type::Boolean.new.cast(params[:certified])
