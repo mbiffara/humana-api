@@ -46,7 +46,7 @@ admin_org = Organization.find_or_create_by!(name: "HUMANA Global") do |o|
   o.city = "Madrid"
   o.country = "España"
   o.country_code = "ES"
-  o.contact_email = "ops@humana.global"
+  o.contact_email = "info@humana.global"
 end
 
 User.find_or_initialize_by(email: "admin@humana.global").tap do |u|
@@ -60,7 +60,7 @@ end
 
 # --- Platform settings -------------------------------------------------------
 PlatformSetting.find_or_create_by!(platform_name: "HUMANA") do |ps|
-  ps.support_email = "ops@humana.global"
+  ps.support_email = "info@humana.global"
   ps.default_currency = "USD"
   ps.default_language = "en"
   ps.agency_commission_rate = 0.16
