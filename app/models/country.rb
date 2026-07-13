@@ -17,7 +17,10 @@ class Country < ApplicationRecord
     where("name ILIKE :t OR code ILIKE :t", t: term)
   }
 
-  before_validation { self.code = code.to_s.strip.upcase.presence }
+  before_validation do
+    self.code = code.to_s.strip.upcase.presence
+    self.name = name.to_s.strip.split(/\s+/).map(&:capitalize).join(" ").presence if name.present?
+  end
 
   def display_name
     [flag_emoji, name].compact.join(" ")

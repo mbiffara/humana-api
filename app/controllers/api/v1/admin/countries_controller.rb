@@ -57,25 +57,45 @@ module Api
             org_ids = orgs.pluck(:id)
             user_ids = User.where(organization_id: org_ids).pluck(:id)
 
+            # Pre-compute IDs to avoid repeated subqueries
+            experience_ids = Experience.where(country_code: country.code).pluck(:id)
+            retreat_ids = Retreat.where(country_code: country.code).pluck(:id)
+            retreat_day_ids = RetreatDay.where(retreat_id: retreat_ids).pluck(:id)
+            # Query hotel IDs via SQL to avoid namespace collision with Api::V1::Hotel module
+            hotel_ids = ActiveRecord::Base.connection.select_values(
+              ActiveRecord::Base.sanitize_sql_array(
+                ["SELECT id FROM hotels WHERE country_code = ?", country.code]
+              )
+            ).map(&:to_i)
+            room_type_ids = RoomType.where(hotel_id: hotel_ids).pluck(:id)
+
             # Nullify invited_by references before destroying users
             Invitation.where(invited_by_id: user_ids).update_all(invited_by_id: nil)
 
             # Delete dependents in safe order (skip callbacks for speed)
+            Booking.where(experience_id: experience_ids).delete_all
             Booking.where(organization_id: org_ids).delete_all
             Client.where(organization_id: org_ids).delete_all
-            Experience.where(country_code: country.code).delete_all
-            RetreatImage.joins(:retreat).where(retreats: { country_code: country.code }).delete_all
-            RetreatPricing.joins(:retreat).where(retreats: { country_code: country.code }).delete_all
-            RetreatInclusion.joins(:retreat).where(retreats: { country_code: country.code }).delete_all
-            RetreatFacilitator.joins(:retreat).where(retreats: { country_code: country.code }).delete_all
-            RetreatActivity.joins(retreat_day: :retreat).where(retreats: { country_code: country.code }).delete_all
-            RetreatDay.joins(:retreat).where(retreats: { country_code: country.code }).delete_all
-            Retreat.where(country_code: country.code).delete_all
-            RoomImage.joins(:room_type).where(room_types: { hotel_id: Hotel.where(country_code: country.code).select(:id) }).delete_all
-            RoomType.where(hotel_id: Hotel.where(country_code: country.code).select(:id)).delete_all
-            HotelAmenity.where(hotel_id: Hotel.where(country_code: country.code).select(:id)).delete_all
-            HotelImage.where(hotel_id: Hotel.where(country_code: country.code).select(:id)).delete_all
-            Hotel.where(country_code: country.code).delete_all
+            Experience.where(id: experience_ids).delete_all
+
+            RetreatImage.where(retreat_id: retreat_ids).delete_all
+            RetreatPricing.where(retreat_id: retreat_ids).delete_all
+            RetreatInclusion.where(retreat_id: retreat_ids).delete_all
+            RetreatFacilitator.where(retreat_id: retreat_ids).delete_all
+            RetreatActivity.where(retreat_day_id: retreat_day_ids).delete_all
+            RetreatDay.where(id: retreat_day_ids).delete_all
+            Retreat.where(id: retreat_ids).delete_all
+
+            RoomImage.where(room_type_id: room_type_ids).delete_all
+            RoomType.where(id: room_type_ids).delete_all
+            HotelAmenity.where(hotel_id: hotel_ids).delete_all
+            HotelImage.where(hotel_id: hotel_ids).delete_all
+            ActiveRecord::Base.connection.execute(
+              ActiveRecord::Base.sanitize_sql_array(
+                ["DELETE FROM hotels WHERE country_code = ?", country.code]
+              )
+            )
+
             Subscription.where(organization_id: org_ids).delete_all
             StripeConnectAccount.where(organization_id: org_ids).delete_all
             Invitation.where(organization_id: org_ids).delete_all
