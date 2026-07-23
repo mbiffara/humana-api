@@ -5,7 +5,7 @@ module Api
       class HotelsController < Api::V1::PublicController
         # GET /api/v1/public/hotels?country=ES&q=ibiza&certified=true
         def index
-          scope = Hotel.in_enabled_country
+          scope = ::Hotel.in_enabled_country
                        .in_country(params[:country])
                        .search(params[:q])
                        .order(:name)
@@ -19,7 +19,7 @@ module Api
 
         # GET /api/v1/public/hotels/:id
         def show
-          hotel = Hotel.find(params[:id])
+          hotel = ::Hotel.find(params[:id])
           render json: { hotel: ApiSerializers.hotel(hotel) }
         end
       end

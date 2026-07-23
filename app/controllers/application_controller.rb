@@ -52,8 +52,8 @@ class ApplicationController < ActionController::API
     render_error("Authentication required", :unauthorized)
   end
 
-  def render_forbidden
-    render_error("You don't have access to this resource", :forbidden)
+  def render_forbidden(message = nil)
+    render_error(message || "You don't have access to this resource", :forbidden)
   end
 
   def render_not_found(exception = nil)
@@ -74,7 +74,7 @@ class ApplicationController < ActionController::API
     end
   end
 
-  def render_bad_request(exception)
-    render_error(exception.message, :bad_request)
+  def render_bad_request(arg)
+    render_error(arg.respond_to?(:message) ? arg.message : arg.to_s, :bad_request)
   end
 end

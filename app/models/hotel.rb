@@ -2,6 +2,8 @@ class Hotel < ApplicationRecord
   belongs_to :organization
   has_many :experiences, dependent: :destroy
   has_many :room_types, dependent: :destroy
+  has_many :rooms, dependent: :destroy
+  has_many :availability_blocks, dependent: :destroy
   has_many :retreats, dependent: :destroy
   has_many :hotel_amenities, dependent: :destroy
   has_many :hotel_images, dependent: :destroy

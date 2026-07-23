@@ -4,15 +4,20 @@ class Booking < ApplicationRecord
   belongs_to :organization # the booking agency
   belongs_to :experience
   belongs_to :client, optional: true
+  belongs_to :room_type, optional: true # accommodation category chosen by the agency
+  belongs_to :room, optional: true      # specific room assigned by the hotel
 
   before_validation :assign_reference, on: :create
   before_validation :snapshot_dates, on: :create
+  before_validation :infer_room_type_from_room
   before_validation :compute_amounts
 
   validates :reference, presence: true, uniqueness: true
   validates :status, inclusion: { in: STATUSES }
   validates :guests, numericality: { greater_than: 0 }
   validate :client_belongs_to_organization
+  validate :room_type_belongs_to_experience_hotel
+  validate :room_belongs_to_room_type
 
   scope :active, -> { where.not(status: "cancelled") }
 
@@ -56,5 +61,21 @@ class Booking < ApplicationRecord
     return if client.nil?
 
     errors.add(:client, "must belong to the booking organization") if client.organization_id != organization_id
+  end
+
+  def infer_room_type_from_room
+    self.room_type ||= room&.room_type
+  end
+
+  def room_type_belongs_to_experience_hotel
+    return if room_type.nil? || experience.nil?
+
+    errors.add(:room_type, "must belong to the experience's hotel") if room_type.hotel_id != experience.hotel_id
+  end
+
+  def room_belongs_to_room_type
+    return if room.nil? || room_type.nil?
+
+    errors.add(:room, "must belong to the selected room type") if room.room_type_id != room_type.id
   end
 end

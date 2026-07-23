@@ -159,6 +159,8 @@ module ApiSerializers
       commission: booking.commission,
       notes: booking.notes,
       client: client(booking.client),
+      room_type: room_type(booking.room_type),
+      room: room(booking.room),
       created_at: booking.created_at
     }
     data[:experience] = experience(booking.experience) if include_experience
@@ -221,6 +223,34 @@ module ApiSerializers
       bed_type: rt.bed_type,
       view_type: rt.view_type,
       amenities_list: rt.amenities
+    }
+  end
+
+  def availability_block(block)
+    return nil unless block
+
+    {
+      id: block.id,
+      hotel_id: block.hotel_id,
+      room_type_id: block.room_type_id,
+      starts_on: block.starts_on,
+      ends_on: block.ends_on,
+      units: block.units,
+      reason: block.reason
+    }
+  end
+
+  def room(room)
+    return nil unless room
+
+    {
+      id: room.id,
+      hotel_id: room.hotel_id,
+      room_type_id: room.room_type_id,
+      number: room.number,
+      status: room.status,
+      auto_generated: room.auto_generated,
+      notes: room.notes
     }
   end
 
