@@ -9,7 +9,7 @@ module Api
       # GET /api/v1/bookings?status=confirmed
       def index
         scope = current_organization.bookings
-                                    .includes(:experience, :client)
+                                    .includes(:experience, :client, :room_type, :room)
                                     .order(created_at: :desc)
         scope = scope.where(status: params[:status]) if params[:status].present?
 
@@ -41,15 +41,15 @@ module Api
       private
 
       def set_booking
-        @booking = current_organization.bookings.includes(:experience, :client).find(params[:id])
+        @booking = current_organization.bookings.includes(:experience, :client, :room_type, :room).find(params[:id])
       end
 
       def booking_params
-        params.require(:booking).permit(:experience_id, :client_id, :guests, :notes)
+        params.require(:booking).permit(:experience_id, :client_id, :room_type_id, :guests, :notes)
       end
 
       def update_params
-        params.require(:booking).permit(:status, :guests, :notes)
+        params.require(:booking).permit(:status, :room_type_id, :guests, :notes)
       end
 
       # Commission and volume totals for the agency's commissions view.

@@ -68,6 +68,9 @@ Rails.application.routes.draw do
           post :submit_for_review, on: :member
         end
         resources :room_types
+        resources :rooms, only: %i[index create update destroy]
+        resources :availability_blocks, only: %i[index create destroy]
+        get "calendar", to: "calendar#index"
         resources :amenities, only: %i[index] do
           collection { post :batch }
         end

@@ -86,6 +86,12 @@ module Api
             RetreatDay.where(id: retreat_day_ids).delete_all
             Retreat.where(id: retreat_ids).delete_all
 
+            # Physical rooms and availability blocks reference room_types with
+            # restrictive FKs — clear them (and any lingering booking room
+            # refs) before the room types themselves.
+            Booking.where(room_type_id: room_type_ids).update_all(room_type_id: nil, room_id: nil)
+            AvailabilityBlock.where(room_type_id: room_type_ids).delete_all
+            Room.where(room_type_id: room_type_ids).delete_all
             RoomImage.where(room_type_id: room_type_ids).delete_all
             RoomType.where(id: room_type_ids).delete_all
             HotelAmenity.where(hotel_id: hotel_ids).delete_all

@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2026_07_10_125331) do
+ActiveRecord::Schema[8.0].define(version: 2026_07_22_000003) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -42,6 +42,20 @@ ActiveRecord::Schema[8.0].define(version: 2026_07_10_125331) do
     t.index ["blob_id", "variation_digest"], name: "index_active_storage_variant_records_uniqueness", unique: true
   end
 
+  create_table "availability_blocks", force: :cascade do |t|
+    t.bigint "hotel_id", null: false
+    t.bigint "room_type_id", null: false
+    t.date "starts_on", null: false
+    t.date "ends_on", null: false
+    t.integer "units"
+    t.string "reason"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["hotel_id"], name: "index_availability_blocks_on_hotel_id"
+    t.index ["room_type_id", "starts_on", "ends_on"], name: "index_availability_blocks_on_room_type_and_range"
+    t.index ["room_type_id"], name: "index_availability_blocks_on_room_type_id"
+  end
+
   create_table "bookings", force: :cascade do |t|
     t.bigint "organization_id", null: false
     t.bigint "experience_id", null: false
@@ -57,10 +71,14 @@ ActiveRecord::Schema[8.0].define(version: 2026_07_10_125331) do
     t.text "notes"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.bigint "room_type_id"
+    t.bigint "room_id"
     t.index ["client_id"], name: "index_bookings_on_client_id"
     t.index ["experience_id"], name: "index_bookings_on_experience_id"
     t.index ["organization_id"], name: "index_bookings_on_organization_id"
     t.index ["reference"], name: "index_bookings_on_reference", unique: true
+    t.index ["room_id"], name: "index_bookings_on_room_id"
+    t.index ["room_type_id"], name: "index_bookings_on_room_type_id"
     t.index ["status"], name: "index_bookings_on_status"
   end
 
@@ -383,6 +401,21 @@ ActiveRecord::Schema[8.0].define(version: 2026_07_10_125331) do
     t.index ["hotel_id"], name: "index_room_types_on_hotel_id"
   end
 
+  create_table "rooms", force: :cascade do |t|
+    t.bigint "hotel_id", null: false
+    t.bigint "room_type_id", null: false
+    t.string "number", null: false
+    t.string "status", default: "available", null: false
+    t.boolean "auto_generated", default: false, null: false
+    t.text "notes"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index "hotel_id, lower((number)::text)", name: "index_rooms_on_hotel_id_and_lower_number", unique: true
+    t.index ["hotel_id"], name: "index_rooms_on_hotel_id"
+    t.index ["room_type_id", "status"], name: "index_rooms_on_room_type_id_and_status"
+    t.index ["room_type_id"], name: "index_rooms_on_room_type_id"
+  end
+
   create_table "stripe_connect_accounts", force: :cascade do |t|
     t.bigint "organization_id", null: false
     t.string "stripe_account_id", null: false
@@ -461,9 +494,13 @@ ActiveRecord::Schema[8.0].define(version: 2026_07_10_125331) do
 
   add_foreign_key "active_storage_attachments", "active_storage_blobs", column: "blob_id"
   add_foreign_key "active_storage_variant_records", "active_storage_blobs", column: "blob_id"
+  add_foreign_key "availability_blocks", "hotels"
+  add_foreign_key "availability_blocks", "room_types"
   add_foreign_key "bookings", "clients"
   add_foreign_key "bookings", "experiences"
   add_foreign_key "bookings", "organizations"
+  add_foreign_key "bookings", "room_types"
+  add_foreign_key "bookings", "rooms"
   add_foreign_key "clients", "organizations"
   add_foreign_key "experiences", "hotels"
   add_foreign_key "hotel_amenities", "hotels"
@@ -483,6 +520,8 @@ ActiveRecord::Schema[8.0].define(version: 2026_07_10_125331) do
   add_foreign_key "retreats", "organizations", column: "created_by_organization_id"
   add_foreign_key "room_images", "room_types"
   add_foreign_key "room_types", "hotels"
+  add_foreign_key "rooms", "hotels"
+  add_foreign_key "rooms", "room_types"
   add_foreign_key "stripe_connect_accounts", "organizations"
   add_foreign_key "subscriptions", "organizations"
   add_foreign_key "subscriptions", "subscription_plans"
