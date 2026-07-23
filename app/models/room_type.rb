@@ -11,6 +11,9 @@ class RoomType < ApplicationRecord
   has_many :room_images, dependent: :destroy
   has_many :rooms, dependent: :destroy
   has_many :availability_blocks, dependent: :destroy
+  # Bookings keep their history when a room type is retired; they just lose
+  # the accommodation attribution (mirrors Room's nullify behavior).
+  has_many :bookings, dependent: :nullify
 
   validates :name, presence: true, uniqueness: { scope: :hotel_id }
   validates :category, inclusion: { in: CATEGORIES }

@@ -65,10 +65,34 @@ RSpec.describe "Admin Countries API", type: :request do
       country = create(:country)
 
       expect {
-        delete "/api/v1/admin/countries/#{country.id}", headers: auth_headers(admin)
+        delete "/api/v1/admin/countries/#{country.id}",
+               params: { password: "humana1234", confirmation_text: country.name }.to_json,
+               headers: auth_headers(admin)
       }.to change(Country, :count).by(-1)
 
       expect(response).to have_http_status(:no_content)
+    end
+
+    it "purges a country with hotels, rooms, and availability blocks" do
+      country = create(:country, code: "ES")
+      hotel_org = create(:organization, :hotel, country_code: "ES")
+      hotel = create(:hotel, organization: hotel_org, country_code: "ES")
+      room_type = create(:room_type, hotel: hotel, total_rooms: 2)
+      create(:availability_block, room_type: room_type)
+      agency = create(:organization, kind: "agency", country_code: "AR")
+      experience = create(:experience, hotel: hotel, country_code: "ES")
+      create(:booking, organization: agency, experience: experience,
+                       room_type: room_type, room: room_type.rooms.first)
+
+      expect {
+        delete "/api/v1/admin/countries/#{country.id}",
+               params: { password: "humana1234", confirmation_text: country.name }.to_json,
+               headers: auth_headers(admin)
+      }.to change(Country, :count).by(-1)
+
+      expect(response).to have_http_status(:no_content)
+      expect(Room.count).to eq(0)
+      expect(AvailabilityBlock.count).to eq(0)
     end
   end
 end

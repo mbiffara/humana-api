@@ -74,4 +74,15 @@ RSpec.describe RoomType, "#sync_rooms_with_total" do
     expect(rt.rooms.count).to eq(2)
     expect(rt.reload.total_rooms).to eq(2)
   end
+
+  it "can be destroyed while bookings reference it, nullifying their room refs" do
+    rt = create(:room_type, hotel: hotel, total_rooms: 1)
+    experience = create(:experience, hotel: hotel)
+    booking = create(:booking, experience: experience, room_type: rt, room: rt.rooms.first)
+
+    expect { rt.destroy! }.not_to raise_error
+    booking.reload
+    expect(booking.room_type_id).to be_nil
+    expect(booking.room_id).to be_nil
+  end
 end
