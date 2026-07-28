@@ -6,9 +6,12 @@ class RoomType < ApplicationRecord
 
   BED_TYPES = %w[single double queen king twin bunk sofa_bed].freeze
 
+  STATUSES = %w[active draft inactive].freeze
+
   belongs_to :hotel
   has_many :retreat_pricings, dependent: :destroy
   has_many :room_images, dependent: :destroy
+  has_many :room_rate_tiers, dependent: :destroy
   has_many :rooms, dependent: :destroy
   has_many :availability_blocks, dependent: :destroy
   # Bookings keep their history when a room type is retired; they just lose
@@ -20,8 +23,10 @@ class RoomType < ApplicationRecord
   validates :capacity, numericality: { greater_than: 0 }
   validates :price_per_night_cents, numericality: { greater_than_or_equal_to: 0 }
   validates :bed_type, inclusion: { in: BED_TYPES }, allow_nil: true
+  validates :status, inclusion: { in: STATUSES }
 
   scope :by_category, ->(c) { c.present? ? where(category: c) : all }
+  scope :by_status, ->(s) { s.present? ? where(status: s) : all }
   scope :ordered, -> { order(position: :asc, price_per_night_cents: :asc) }
 
   after_save :sync_rooms_with_total, if: :saved_change_to_total_rooms?

@@ -67,7 +67,12 @@ Rails.application.routes.draw do
         resource :profile, only: %i[show update] do
           post :submit_for_review, on: :member
         end
-        resources :room_types
+        resources :room_types do
+          resources :images, controller: "room_images", only: [:index] do
+            collection { post :batch }
+          end
+          resources :rate_tiers, controller: "room_rate_tiers", except: [:show]
+        end
         resources :rooms, only: %i[index create update destroy]
         resources :availability_blocks, only: %i[index create destroy]
         get "calendar", to: "calendar#index"
