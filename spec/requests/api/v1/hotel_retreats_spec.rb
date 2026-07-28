@@ -154,19 +154,30 @@ RSpec.describe "Hotel Retreats API", type: :request do
 
       put "/api/v1/hotel/retreats/#{retreat.id}/program",
           params: {
-            days: [{ day_number: 1, title: "Arrival", activities: [{ name: "Opening circle", time: "17:00" }] },
+            days: [{ day_number: 1, title: "Arrival", description: "Settle in",
+                     activities: [{ name: "Opening circle", time: "17:00", duration_minutes: 90,
+                                    description: "Welcome ritual", category: "ceremony", icon: "circle" }] },
                    { day_number: 2, title: "Immersion", activities: [] }],
-            facilitators: [{ name: "Ixchel Nahua", role: "lead", specialty: "Traditional medicine" }],
-            inclusions: [{ name: "Plant-based meals" }]
+            facilitators: [{ name: "Ixchel Nahua", role: "lead", specialty: "Traditional medicine",
+                             bio: "Third-generation healer" }],
+            inclusions: [{ name: "Plant-based meals", category: "meal", icon: "leaf" }]
           }.to_json,
           headers: auth_headers(owner)
 
       expect(response).to have_http_status(:ok)
       retreat.reload
       expect(retreat.retreat_days.order(:day_number).map(&:title)).to eq(%w[Arrival Immersion])
-      expect(retreat.retreat_activities.map(&:name)).to eq(["Opening circle"])
-      expect(retreat.retreat_facilitators.map(&:name)).to eq(["Ixchel Nahua"])
-      expect(retreat.retreat_inclusions.map(&:name)).to eq(["Plant-based meals"])
+      expect(retreat.retreat_days.order(:day_number).first.description).to eq("Settle in")
+
+      activity = retreat.retreat_activities.sole
+      expect(activity).to have_attributes(name: "Opening circle", time: "17:00", duration_minutes: 90,
+                                          description: "Welcome ritual", category: "ceremony", icon: "circle")
+
+      facilitator = retreat.retreat_facilitators.sole
+      expect(facilitator).to have_attributes(name: "Ixchel Nahua", bio: "Third-generation healer")
+
+      inclusion = retreat.retreat_inclusions.sole
+      expect(inclusion).to have_attributes(name: "Plant-based meals", category: "meal", icon: "leaf")
     end
 
     it "rolls back entirely when any record is invalid" do

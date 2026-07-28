@@ -67,7 +67,11 @@ module Api
                 day.retreat_activities.create!(
                   name: activity_params[:name],
                   time: activity_params[:time],
-                  position: activity_params[:position] || j
+                  position: activity_params[:position] || j,
+                  duration_minutes: activity_params[:duration_minutes],
+                  description: activity_params[:description],
+                  category: activity_params[:category],
+                  icon: activity_params[:icon]
                 )
               end
             end
@@ -79,6 +83,7 @@ module Api
                 role: facilitator_params[:role] || "assistant",
                 specialty: facilitator_params[:specialty],
                 avatar_url: facilitator_params[:avatar_url],
+                bio: facilitator_params[:bio],
                 position: facilitator_params[:position] || i
               )
             end
@@ -87,6 +92,8 @@ module Api
             (params[:inclusions] || []).each_with_index do |inclusion_params, i|
               retreat.retreat_inclusions.create!(
                 name: inclusion_params[:name],
+                category: inclusion_params[:category],
+                icon: inclusion_params[:icon],
                 position: inclusion_params[:position] || i
               )
             end
