@@ -48,11 +48,25 @@ module Api
         end
 
         # Booked room-nights over operational room-nights for the window.
+        # Availability blocks close inventory, so they shrink the denominator
+        # day by day — the same treatment the calendar gives them.
         def occupancy_rate(from, to)
-          operational = current_hotel.rooms.where(status: "available").count
-          return 0.0 if operational.zero?
+          days = (from..to).to_a
+          blocks = current_hotel.availability_blocks.overlapping(from, to).group_by(&:room_type_id)
 
-          capacity = operational * ((to - from).to_i + 1)
+          capacity = current_hotel.room_types.includes(:rooms).sum do |room_type|
+            operational = room_type.rooms.count { |r| r.status == "available" }
+            next 0 if operational.zero?
+
+            days.sum do |day|
+              blocked = (blocks[room_type.id] || [])
+                        .select { |block| block.covers?(day) }
+                        .sum { |block| block.blocked_units(operational) }
+              (operational - blocked).clamp(0, operational)
+            end
+          end
+          return 0.0 if capacity.zero?
+
           booked = hotel_bookings
                    .where.not(starts_on: nil).where.not(ends_on: nil)
                    .where("bookings.starts_on <= ? AND bookings.ends_on > ?", to, from)
@@ -60,15 +74,31 @@ module Api
           (booked.to_f / capacity).clamp(0.0, 1.0).round(4)
         end
 
+        # Revenue is aggregated per currency — amounts are never mixed or
+        # converted. The headline is the currency with the largest total in
+        # the current month (falling back to the previous one).
         def revenue(today)
-          current = month_revenue_cents(today.beginning_of_month, today.end_of_month)
-          previous = month_revenue_cents(today.prev_month.beginning_of_month, today.prev_month.end_of_month)
+          current = month_revenue_by_currency(today.beginning_of_month, today.end_of_month)
+          previous = month_revenue_by_currency(today.prev_month.beginning_of_month,
+                                               today.prev_month.end_of_month)
+          currencies = current.keys | previous.keys
+          headline = currencies.max_by { |c| [current[c] || 0, previous[c] || 0] } || "USD"
 
-          { current_cents: current, previous_cents: previous, currency: "USD" }
+          {
+            currency: headline,
+            current_cents: current[headline] || 0,
+            previous_cents: previous[headline] || 0,
+            by_currency: currencies.sort.map do |c|
+              { currency: c, current_cents: current[c] || 0, previous_cents: previous[c] || 0 }
+            end
+          }
         end
 
-        def month_revenue_cents(from, to)
-          hotel_bookings.where(starts_on: from..to).sum(:amount_cents)
+        def month_revenue_by_currency(from, to)
+          hotel_bookings.where(starts_on: from..to)
+                        .group("bookings.currency")
+                        .sum(:amount_cents)
+                        .transform_keys { |currency| currency.presence || "USD" }
         end
 
         def upcoming(today)

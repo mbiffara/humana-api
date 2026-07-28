@@ -57,6 +57,39 @@ RSpec.describe "Hotel Dashboard API", type: :request do
       expect(dashboard["retreats"]["items"].map { |i| i["state"] }).to eq(%w[in_progress upcoming])
     end
 
+    it "subtracts availability blocks from the occupancy denominator" do
+      create(:room, room_type: room_type, number: "Suite 1")
+      create(:room, room_type: room_type, number: "Suite 2")
+      # One of the two rooms is closed for both 30-day windows; the other is
+      # fully booked for the current window — occupancy should read 100%.
+      create(:availability_block, hotel: hotel, room_type: room_type, units: 1,
+                                  starts_on: Date.current - 90, ends_on: Date.current + 30)
+      create_booking(guests: 2, starts_on: Date.current - 90, ends_on: Date.current + 1)
+
+      get "/api/v1/hotel/dashboard", headers: auth_headers(owner)
+
+      dashboard = JSON.parse(response.body)["dashboard"]
+      expect(dashboard["occupancy"]["rate"]).to eq(1.0)
+      expect(dashboard["occupancy"]["previous_rate"]).to eq(1.0)
+    end
+
+    it "aggregates revenue per currency without mixing them" do
+      eur_experience = create(:experience, hotel: hotel, price_cents: 150_000, currency: "EUR")
+      create_booking(guests: 2, starts_on: Date.current, ends_on: Date.current + 3) # $2,000 USD
+      create(:booking, organization: agency, experience: eur_experience, guests: 1,
+                       starts_on: Date.current + 1, ends_on: Date.current + 4) # €1,500 EUR
+
+      get "/api/v1/hotel/dashboard", headers: auth_headers(owner)
+
+      revenue = JSON.parse(response.body)["dashboard"]["revenue"]
+      expect(revenue["currency"]).to eq("USD")
+      expect(revenue["current_cents"]).to eq(200_000)
+      expect(revenue["by_currency"]).to contain_exactly(
+        { "currency" => "EUR", "current_cents" => 150_000, "previous_cents" => 0 },
+        { "currency" => "USD", "current_cents" => 200_000, "previous_cents" => 0 },
+      )
+    end
+
     it "returns zeroed stats for a hotel with no activity" do
       get "/api/v1/hotel/dashboard", headers: auth_headers(owner)
 
