@@ -81,6 +81,7 @@ Rails.application.routes.draw do
           member do
             post :submit_for_review
             post :publish
+            put "program" => "retreats#replace_program"
           end
           resources :days, controller: "retreat_days", except: [:show] do
             resources :activities, controller: "retreat_activities", except: [:show]

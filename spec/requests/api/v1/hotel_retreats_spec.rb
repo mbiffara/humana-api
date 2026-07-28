@@ -124,6 +124,81 @@ RSpec.describe "Hotel Retreats API", type: :request do
       expect(images.first.is_cover).to be(true)
       expect(retreat.cover_image_url).to eq("https://img.test/a.jpg")
     end
+
+    it "rolls back entirely when any image is invalid" do
+      retreat = create_retreat(cover_image_url: "https://img.test/old.jpg")
+      retreat.retreat_images.create!(image_url: "https://img.test/old.jpg", position: 0, is_cover: true)
+
+      post "/api/v1/hotel/retreats/#{retreat.id}/images/batch",
+           params: { images: [{ image_url: "https://img.test/a.jpg" }, { image_url: "" }] }.to_json,
+           headers: auth_headers(owner)
+
+      expect(response).to have_http_status(:unprocessable_entity)
+      retreat.reload
+      expect(retreat.retreat_images.map(&:image_url)).to eq(["https://img.test/old.jpg"])
+      expect(retreat.cover_image_url).to eq("https://img.test/old.jpg")
+    end
+  end
+
+  describe "PUT /api/v1/hotel/retreats/:id/program" do
+    def existing_program!(retreat)
+      day = create(:retreat_day, retreat: retreat, day_number: 1, title: "Old day")
+      create(:retreat_activity, retreat_day: day, name: "Old activity")
+      retreat.retreat_facilitators.create!(name: "Old Facilitator", role: "lead")
+      retreat.retreat_inclusions.create!(name: "Old inclusion")
+    end
+
+    it "atomically replaces days, activities, facilitators, and inclusions" do
+      retreat = create_retreat
+      existing_program!(retreat)
+
+      put "/api/v1/hotel/retreats/#{retreat.id}/program",
+          params: {
+            days: [{ day_number: 1, title: "Arrival", description: "Settle in",
+                     activities: [{ name: "Opening circle", time: "17:00", duration_minutes: 90,
+                                    description: "Welcome ritual", category: "ceremony", icon: "circle" }] },
+                   { day_number: 2, title: "Immersion", activities: [] }],
+            facilitators: [{ name: "Ixchel Nahua", role: "lead", specialty: "Traditional medicine",
+                             bio: "Third-generation healer" }],
+            inclusions: [{ name: "Plant-based meals", category: "meal", icon: "leaf" }]
+          }.to_json,
+          headers: auth_headers(owner)
+
+      expect(response).to have_http_status(:ok)
+      retreat.reload
+      expect(retreat.retreat_days.order(:day_number).map(&:title)).to eq(%w[Arrival Immersion])
+      expect(retreat.retreat_days.order(:day_number).first.description).to eq("Settle in")
+
+      activity = retreat.retreat_activities.sole
+      expect(activity).to have_attributes(name: "Opening circle", time: "17:00", duration_minutes: 90,
+                                          description: "Welcome ritual", category: "ceremony", icon: "circle")
+
+      facilitator = retreat.retreat_facilitators.sole
+      expect(facilitator).to have_attributes(name: "Ixchel Nahua", bio: "Third-generation healer")
+
+      inclusion = retreat.retreat_inclusions.sole
+      expect(inclusion).to have_attributes(name: "Plant-based meals", category: "meal", icon: "leaf")
+    end
+
+    it "rolls back entirely when any record is invalid" do
+      retreat = create_retreat
+      existing_program!(retreat)
+
+      put "/api/v1/hotel/retreats/#{retreat.id}/program",
+          params: {
+            days: [{ day_number: 1, title: "Arrival", activities: [{ name: "Opening circle" }] }],
+            facilitators: [{ name: "", role: "lead" }],
+            inclusions: []
+          }.to_json,
+          headers: auth_headers(owner)
+
+      expect(response).to have_http_status(:unprocessable_entity)
+      retreat.reload
+      expect(retreat.retreat_days.map(&:title)).to eq(["Old day"])
+      expect(retreat.retreat_activities.map(&:name)).to eq(["Old activity"])
+      expect(retreat.retreat_facilitators.map(&:name)).to eq(["Old Facilitator"])
+      expect(retreat.retreat_inclusions.map(&:name)).to eq(["Old inclusion"])
+    end
   end
 
   describe "retreat pricing" do
@@ -145,6 +220,19 @@ RSpec.describe "Hotel Retreats API", type: :request do
 
       pricing_id = JSON.parse(response.body)["pricing"]["id"]
       delete "/api/v1/hotel/retreats/#{retreat.id}/pricings/#{pricing_id}", headers: auth_headers(owner)
+      expect(retreat.reload.min_price_cents).to eq(245_000)
+    end
+
+    it "refreshes the cached min price when a room type is deleted" do
+      retreat = create_retreat
+      suite = create(:room_type, hotel: hotel, name: "Cenote Suite")
+      villa = create(:room_type, hotel: hotel, name: "Ocean Villa")
+      retreat.retreat_pricings.create!(room_type: suite, price_per_guest_cents: 245_000)
+      retreat.retreat_pricings.create!(room_type: villa, price_per_guest_cents: 165_000)
+      expect(retreat.reload.min_price_cents).to eq(165_000)
+
+      villa.destroy!
+
       expect(retreat.reload.min_price_cents).to eq(245_000)
     end
   end
