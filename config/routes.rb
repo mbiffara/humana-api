@@ -67,6 +67,7 @@ Rails.application.routes.draw do
         resource :profile, only: %i[show update] do
           post :submit_for_review, on: :member
         end
+        resource :dashboard, only: [:show], controller: "dashboard"
         resources :room_types do
           resources :images, controller: "room_images", only: [:index] do
             collection { post :batch }
@@ -86,6 +87,7 @@ Rails.application.routes.draw do
           member do
             post :submit_for_review
             post :publish
+            put "program" => "retreats#replace_program"
           end
           resources :days, controller: "retreat_days", except: [:show] do
             resources :activities, controller: "retreat_activities", except: [:show]

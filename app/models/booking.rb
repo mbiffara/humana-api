@@ -52,7 +52,11 @@ class Booking < ApplicationRecord
   def compute_amounts
     return unless experience
 
-    self.currency = experience.currency if currency.blank?
+    # Inherit the experience currency unless the caller explicitly set one —
+    # the column's "USD" default must not mislabel non-USD experiences.
+    if currency.blank? || (new_record? && !will_save_change_to_currency?)
+      self.currency = experience.currency
+    end
     self.amount_cents = experience.price_cents * guests if amount_cents.to_i.zero?
     self.commission_cents = (amount_cents * experience.commission_rate).round
   end
