@@ -11,7 +11,19 @@ class RetreatPricing < ApplicationRecord
 
   scope :ordered, -> { joins(:room_type).order("room_types.position ASC") }
 
+  after_commit :refresh_retreat_min_price
+
   def price_per_guest
     price_per_guest_cents / 100.0
+  end
+
+  private
+
+  # Retreat#min_price_cents is cached at save time, so pricing changes must
+  # push the recomputed value back onto the parent.
+  def refresh_retreat_min_price
+    return if destroyed_by_association
+
+    retreat.update_column(:min_price_cents, retreat.retreat_pricings.minimum(:price_per_guest_cents) || 0)
   end
 end

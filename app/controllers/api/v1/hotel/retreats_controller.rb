@@ -6,7 +6,7 @@ module Api
     module Hotel
       class RetreatsController < BaseController
         def index
-          scope = current_hotel.retreats
+          scope = current_hotel.retreats.includes(:hotel, :retreat_images)
           scope = scope.by_status(params[:status]) if params[:status].present?
 
           retreats = scope.order(created_at: :desc)
@@ -41,8 +41,23 @@ module Api
 
         def destroy
           retreat = current_hotel.retreats.find(params[:id])
-          retreat.destroy!
-          head :no_content
+          if retreat.status == "draft"
+            retreat.destroy!
+            head :no_content
+          else
+            render json: { error: "Only draft retreats can be deleted" }, status: :unprocessable_entity
+          end
+        end
+
+        # Publish a retreat directly, making it visible on the platform
+        def publish
+          retreat = current_hotel.retreats.find(params[:id])
+          if %w[draft pending_review].include?(retreat.status)
+            retreat.publish!
+            render json: { retreat: ApiSerializers.retreat(retreat) }
+          else
+            render json: { error: "Only draft retreats can be published" }, status: :unprocessable_entity
+          end
         end
 
         # Submit a draft retreat for admin review
@@ -62,8 +77,7 @@ module Api
           params.require(:retreat).permit(
             :name, :retreat_type, :duration_nights, :starts_on, :ends_on,
             :capacity, :language, :description, :short_description, :location,
-            :country, :country_code, :currency, :commission_rate, :cover_image_url,
-            :certified
+            :country, :country_code, :currency, :commission_rate, :cover_image_url
           )
         end
       end

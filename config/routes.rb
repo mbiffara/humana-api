@@ -78,14 +78,19 @@ Rails.application.routes.draw do
           collection { post :batch }
         end
         resources :retreats do
-          member { post :submit_for_review }
+          member do
+            post :submit_for_review
+            post :publish
+          end
           resources :days, controller: "retreat_days", except: [:show] do
             resources :activities, controller: "retreat_activities", except: [:show]
           end
           resources :facilitators, controller: "retreat_facilitators", except: [:show]
           resources :inclusions, controller: "retreat_inclusions", except: [:show]
           resources :pricings, controller: "retreat_pricings", except: [:show]
-          resources :images, controller: "retreat_images", except: [:show]
+          resources :images, controller: "retreat_images", except: [:show] do
+            collection { post :batch }
+          end
         end
       end
 
