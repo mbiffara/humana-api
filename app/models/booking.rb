@@ -70,7 +70,13 @@ class Booking < ApplicationRecord
   def room_type_belongs_to_experience_hotel
     return if room_type.nil? || experience.nil?
 
-    errors.add(:room_type, "must belong to the experience's hotel") if room_type.hotel_id != experience.hotel_id
+    if room_type.hotel_id != experience.hotel_id
+      errors.add(:room_type, "must belong to the experience's hotel")
+    elsif room_type.status != "active" && (new_record? || will_save_change_to_room_type_id?)
+      # Draft/inactive types are retired from sale; only newly selected room
+      # types are checked so existing booking history stays valid.
+      errors.add(:room_type, "is not open for sale")
+    end
   end
 
   def room_belongs_to_room_type

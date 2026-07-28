@@ -10,7 +10,6 @@ class CreateRoomRateTiers < ActiveRecord::Migration[8.0]
       t.date :starts_on
       t.date :ends_on
       t.integer :price_per_night_cents, null: false
-      t.integer :position, default: 0, null: false
 
       t.timestamps
     end

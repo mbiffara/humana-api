@@ -72,6 +72,45 @@ RSpec.describe "Hotel Room Type Management API", type: :request do
     end
   end
 
+  describe "room type lifecycle enforcement" do
+    let(:agency) { create(:organization) }
+    let(:experience) { create(:experience, hotel: hotel) }
+
+    it "rejects new bookings for non-active room types" do
+      room_type.update!(status: "inactive")
+      booking = build(:booking, organization: agency, experience: experience, room_type: room_type)
+
+      expect(booking).not_to be_valid
+      expect(booking.errors[:room_type]).to include("is not open for sale")
+    end
+
+    it "keeps existing bookings valid when their room type is retired" do
+      booking = create(:booking, organization: agency, experience: experience, room_type: room_type)
+      room_type.update!(status: "inactive")
+
+      booking.status = "completed"
+      expect(booking).to be_valid
+    end
+
+    it "hides non-active room type pricing from discovery serialization but not from management" do
+      retreat = create(:retreat, hotel: hotel, created_by_organization: hotel_org)
+      active_type = create(:room_type, hotel: hotel, name: "Villa")
+      retreat.retreat_pricings.create!(room_type: room_type, price_per_guest_cents: 100_000)
+      retreat.retreat_pricings.create!(room_type: active_type, price_per_guest_cents: 200_000)
+      room_type.update!(status: "draft")
+
+      discovery = ApiSerializers.retreat(retreat)
+      expect(discovery[:pricing].map { |p| p[:room_type][:name] }).to eq(["Villa"])
+
+      management = ApiSerializers.retreat(retreat, all_pricing: true)
+      expect(management[:pricing].length).to eq(2)
+
+      get "/api/v1/hotel/retreats/#{retreat.id}", headers: auth_headers(owner)
+      body = JSON.parse(response.body)["retreat"]
+      expect(body["pricing"].length).to eq(2)
+    end
+  end
+
   describe "rate tiers CRUD" do
     it "creates, updates, and deletes tiers" do
       post "/api/v1/hotel/room_types/#{room_type.id}/rate_tiers",

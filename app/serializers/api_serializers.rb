@@ -255,8 +255,7 @@ module ApiSerializers
       starts_on: tier.starts_on,
       ends_on: tier.ends_on,
       price_per_night_cents: tier.price_per_night_cents,
-      price_per_night: tier.price_per_night,
-      position: tier.position
+      price_per_night: tier.price_per_night
     }
   end
 
@@ -290,7 +289,10 @@ module ApiSerializers
 
   # Full retreat with nested day-by-day program, facilitators, inclusions,
   # pricing tiers, and gallery. Pass include_details: false for list views.
-  def retreat(r, include_details: true, include_commission: true)
+  # all_pricing: management views (hotel editor, admin review) see pricing for
+  # every room type; discovery/booking consumers only see room types that are
+  # open for sale (active).
+  def retreat(r, include_details: true, include_commission: true, all_pricing: false)
     return nil unless r
 
     data = {
@@ -330,7 +332,9 @@ module ApiSerializers
       data[:days] = r.retreat_days.ordered.map { |d| retreat_day(d) }
       data[:facilitators] = r.retreat_facilitators.ordered.map { |f| retreat_facilitator(f) }
       data[:inclusions] = r.retreat_inclusions.ordered.map { |i| retreat_inclusion(i) }
-      data[:pricing] = r.retreat_pricings.includes(:room_type).map { |p| retreat_pricing(p) }
+      pricings = r.retreat_pricings.includes(:room_type)
+      pricings = pricings.select { |p| p.room_type&.status == "active" } unless all_pricing
+      data[:pricing] = pricings.map { |p| retreat_pricing(p) }
       data[:images] = r.retreat_images.ordered.map { |img| retreat_image(img) }
     end
 

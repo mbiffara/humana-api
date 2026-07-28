@@ -42,7 +42,7 @@ module Api
 
         def tier_params
           params.require(:rate_tier).permit(
-            :min_rooms, :starts_on, :ends_on, :price_per_night_cents, :position
+            :min_rooms, :starts_on, :ends_on, :price_per_night_cents
           )
         end
       end

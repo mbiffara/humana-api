@@ -20,7 +20,7 @@ module Api
 
         def show
           retreat = Retreat.find(params[:id])
-          render json: { retreat: ApiSerializers.retreat(retreat) }
+          render json: { retreat: ApiSerializers.retreat(retreat, all_pricing: true) }
         end
 
         # Approve a pending_review retreat to active status

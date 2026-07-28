@@ -385,7 +385,6 @@ ActiveRecord::Schema[8.0].define(version: 2026_07_28_184500) do
     t.date "starts_on"
     t.date "ends_on"
     t.integer "price_per_night_cents", null: false
-    t.integer "position", default: 0, null: false
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.index ["room_type_id", "min_rooms"], name: "index_room_rate_tiers_on_room_type_id_and_min_rooms"
