@@ -49,6 +49,52 @@ module Api
           end
         end
 
+        # Atomically replace the retreat's full program (days + activities,
+        # facilitators, inclusions). All-or-nothing so a mid-request failure
+        # can never leave a published retreat with a half-rebuilt program.
+        def replace_program
+          retreat = current_hotel.retreats.find(params[:id])
+
+          ActiveRecord::Base.transaction do
+            retreat.retreat_days.destroy_all
+            (params[:days] || []).each_with_index do |day_params, i|
+              day = retreat.retreat_days.create!(
+                day_number: day_params[:day_number] || i + 1,
+                title: day_params[:title],
+                description: day_params[:description]
+              )
+              (day_params[:activities] || []).each_with_index do |activity_params, j|
+                day.retreat_activities.create!(
+                  name: activity_params[:name],
+                  time: activity_params[:time],
+                  position: activity_params[:position] || j
+                )
+              end
+            end
+
+            retreat.retreat_facilitators.destroy_all
+            (params[:facilitators] || []).each_with_index do |facilitator_params, i|
+              retreat.retreat_facilitators.create!(
+                name: facilitator_params[:name],
+                role: facilitator_params[:role] || "assistant",
+                specialty: facilitator_params[:specialty],
+                avatar_url: facilitator_params[:avatar_url],
+                position: facilitator_params[:position] || i
+              )
+            end
+
+            retreat.retreat_inclusions.destroy_all
+            (params[:inclusions] || []).each_with_index do |inclusion_params, i|
+              retreat.retreat_inclusions.create!(
+                name: inclusion_params[:name],
+                position: inclusion_params[:position] || i
+              )
+            end
+          end
+
+          render json: { retreat: ApiSerializers.retreat(retreat.reload) }
+        end
+
         # Publish a retreat directly, making it visible on the platform
         def publish
           retreat = current_hotel.retreats.find(params[:id])

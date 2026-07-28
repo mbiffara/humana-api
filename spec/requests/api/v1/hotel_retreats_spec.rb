@@ -126,6 +126,56 @@ RSpec.describe "Hotel Retreats API", type: :request do
     end
   end
 
+  describe "PUT /api/v1/hotel/retreats/:id/program" do
+    def existing_program!(retreat)
+      day = create(:retreat_day, retreat: retreat, day_number: 1, title: "Old day")
+      create(:retreat_activity, retreat_day: day, name: "Old activity")
+      retreat.retreat_facilitators.create!(name: "Old Facilitator", role: "lead")
+      retreat.retreat_inclusions.create!(name: "Old inclusion")
+    end
+
+    it "atomically replaces days, activities, facilitators, and inclusions" do
+      retreat = create_retreat
+      existing_program!(retreat)
+
+      put "/api/v1/hotel/retreats/#{retreat.id}/program",
+          params: {
+            days: [{ day_number: 1, title: "Arrival", activities: [{ name: "Opening circle", time: "17:00" }] },
+                   { day_number: 2, title: "Immersion", activities: [] }],
+            facilitators: [{ name: "Ixchel Nahua", role: "lead", specialty: "Traditional medicine" }],
+            inclusions: [{ name: "Plant-based meals" }]
+          }.to_json,
+          headers: auth_headers(owner)
+
+      expect(response).to have_http_status(:ok)
+      retreat.reload
+      expect(retreat.retreat_days.order(:day_number).map(&:title)).to eq(%w[Arrival Immersion])
+      expect(retreat.retreat_activities.map(&:name)).to eq(["Opening circle"])
+      expect(retreat.retreat_facilitators.map(&:name)).to eq(["Ixchel Nahua"])
+      expect(retreat.retreat_inclusions.map(&:name)).to eq(["Plant-based meals"])
+    end
+
+    it "rolls back entirely when any record is invalid" do
+      retreat = create_retreat
+      existing_program!(retreat)
+
+      put "/api/v1/hotel/retreats/#{retreat.id}/program",
+          params: {
+            days: [{ day_number: 1, title: "Arrival", activities: [{ name: "Opening circle" }] }],
+            facilitators: [{ name: "", role: "lead" }],
+            inclusions: []
+          }.to_json,
+          headers: auth_headers(owner)
+
+      expect(response).to have_http_status(:unprocessable_entity)
+      retreat.reload
+      expect(retreat.retreat_days.map(&:title)).to eq(["Old day"])
+      expect(retreat.retreat_activities.map(&:name)).to eq(["Old activity"])
+      expect(retreat.retreat_facilitators.map(&:name)).to eq(["Old Facilitator"])
+      expect(retreat.retreat_inclusions.map(&:name)).to eq(["Old inclusion"])
+    end
+  end
+
   describe "retreat pricing" do
     it "refreshes the cached min price when pricings change" do
       retreat = create_retreat
