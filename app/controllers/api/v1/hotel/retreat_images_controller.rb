@@ -36,18 +36,24 @@ module Api
 
         # POST /api/v1/hotel/retreats/:retreat_id/images/batch
         # Replaces the whole gallery in order; first image becomes the cover.
+        # All-or-nothing: an invalid image rolls back the entire replacement
+        # so a validation failure can never leave a partial gallery or a
+        # cover_image_url pointing at a deleted image.
         def batch
-          @retreat.retreat_images.destroy_all
+          images = nil
+          ActiveRecord::Base.transaction do
+            @retreat.retreat_images.destroy_all
 
-          images = (params[:images] || []).map.with_index do |img, i|
-            @retreat.retreat_images.create!(
-              image_url: img[:image_url],
-              alt_text: img[:alt_text],
-              position: i,
-              is_cover: i.zero?
-            )
+            images = (params[:images] || []).map.with_index do |img, i|
+              @retreat.retreat_images.create!(
+                image_url: img[:image_url],
+                alt_text: img[:alt_text],
+                position: i,
+                is_cover: i.zero?
+              )
+            end
+            @retreat.update!(cover_image_url: images.first&.image_url)
           end
-          @retreat.update!(cover_image_url: images.first&.image_url)
 
           render json: { images: images.map { |img| ApiSerializers.retreat_image(img) } }, status: :created
         end

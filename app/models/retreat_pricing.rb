@@ -22,7 +22,10 @@ class RetreatPricing < ApplicationRecord
   # Retreat#min_price_cents is cached at save time, so pricing changes must
   # push the recomputed value back onto the parent.
   def refresh_retreat_min_price
-    return if destroyed_by_association
+    # Skip only when the retreat itself is being destroyed — destruction
+    # cascading from elsewhere (e.g. a deleted room type) must still
+    # refresh the surviving retreat's cached minimum.
+    return if destroyed_by_association&.active_record == Retreat
 
     retreat.update_column(:min_price_cents, retreat.retreat_pricings.minimum(:price_per_guest_cents) || 0)
   end
