@@ -21,6 +21,13 @@ RSpec.describe "Hotel workspace access", type: :request do
       expect(JSON.parse(response.body)["error"]).to eq("Hotel access required")
     end
 
+    it "rejects platform admin users" do
+      admin = create(:user, :admin)
+      get "/api/v1/hotel/room_types", headers: auth_headers(admin)
+
+      expect(response).to have_http_status(:forbidden)
+    end
+
     it "rejects unauthenticated requests" do
       get "/api/v1/hotel/room_types"
       expect(response).to have_http_status(:unauthorized)
