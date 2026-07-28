@@ -15,7 +15,7 @@ module Api
 
         def show
           retreat = current_hotel.retreats.find(params[:id])
-          render json: { retreat: ApiSerializers.retreat(retreat) }
+          render json: { retreat: ApiSerializers.retreat(retreat, all_pricing: true) }
         end
 
         def create
@@ -24,7 +24,7 @@ module Api
           retreat.created_by_type = "hotel"
 
           if retreat.save
-            render json: { retreat: ApiSerializers.retreat(retreat) }, status: :created
+            render json: { retreat: ApiSerializers.retreat(retreat, all_pricing: true) }, status: :created
           else
             render_unprocessable(retreat.errors.full_messages)
           end
@@ -33,7 +33,7 @@ module Api
         def update
           retreat = current_hotel.retreats.find(params[:id])
           if retreat.update(retreat_params)
-            render json: { retreat: ApiSerializers.retreat(retreat) }
+            render json: { retreat: ApiSerializers.retreat(retreat, all_pricing: true) }
           else
             render_unprocessable(retreat.errors.full_messages)
           end
@@ -107,7 +107,7 @@ module Api
           retreat = current_hotel.retreats.find(params[:id])
           if %w[draft pending_review].include?(retreat.status)
             retreat.publish!
-            render json: { retreat: ApiSerializers.retreat(retreat) }
+            render json: { retreat: ApiSerializers.retreat(retreat, all_pricing: true) }
           else
             render json: { error: "Only draft retreats can be published" }, status: :unprocessable_entity
           end

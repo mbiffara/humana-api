@@ -11,7 +11,7 @@ module Api
 
         def show
           rt = current_hotel.room_types.find(params[:id])
-          render json: { room_type: ApiSerializers.room_type(rt) }
+          render json: { room_type: ApiSerializers.room_type(rt, include_details: true) }
         end
 
         def create
@@ -44,7 +44,7 @@ module Api
           params.require(:room_type).permit(
             :name, :category, :capacity, :area_sqm, :price_per_night_cents,
             :currency, :description, :image_url, :total_rooms, :position,
-            :bed_type
+            :bed_type, :view_type, :status, amenities: []
           )
         end
       end

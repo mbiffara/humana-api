@@ -203,14 +203,15 @@ module ApiSerializers
     }
   end
 
-  def room_type(rt)
+  def room_type(rt, include_details: false)
     return nil unless rt
 
-    {
+    data = {
       id: rt.id,
       hotel_id: rt.hotel_id,
       name: rt.name,
       category: rt.category,
+      status: rt.status,
       capacity: rt.capacity,
       area_sqm: rt.area_sqm&.to_f,
       price_per_night_cents: rt.price_per_night_cents,
@@ -223,6 +224,38 @@ module ApiSerializers
       bed_type: rt.bed_type,
       view_type: rt.view_type,
       amenities_list: rt.amenities
+    }
+
+    if include_details
+      data[:images] = rt.room_images.ordered.map { |img| room_image(img) }
+      data[:rate_tiers] = rt.room_rate_tiers.ordered.map { |tier| room_rate_tier(tier) }
+    end
+
+    data
+  end
+
+  def room_image(img)
+    return nil unless img
+
+    {
+      id: img.id,
+      image_url: img.image_url,
+      position: img.position,
+      alt_text: img.alt_text,
+      is_primary: img.is_primary
+    }
+  end
+
+  def room_rate_tier(tier)
+    return nil unless tier
+
+    {
+      id: tier.id,
+      min_rooms: tier.min_rooms,
+      starts_on: tier.starts_on,
+      ends_on: tier.ends_on,
+      price_per_night_cents: tier.price_per_night_cents,
+      price_per_night: tier.price_per_night
     }
   end
 
@@ -256,7 +289,10 @@ module ApiSerializers
 
   # Full retreat with nested day-by-day program, facilitators, inclusions,
   # pricing tiers, and gallery. Pass include_details: false for list views.
-  def retreat(r, include_details: true, include_commission: true)
+  # all_pricing: management views (hotel editor, admin review) see pricing for
+  # every room type; discovery/booking consumers only see room types that are
+  # open for sale (active).
+  def retreat(r, include_details: true, include_commission: true, all_pricing: false)
     return nil unless r
 
     data = {
@@ -296,7 +332,9 @@ module ApiSerializers
       data[:days] = r.retreat_days.ordered.map { |d| retreat_day(d) }
       data[:facilitators] = r.retreat_facilitators.ordered.map { |f| retreat_facilitator(f) }
       data[:inclusions] = r.retreat_inclusions.ordered.map { |i| retreat_inclusion(i) }
-      data[:pricing] = r.retreat_pricings.includes(:room_type).map { |p| retreat_pricing(p) }
+      pricings = r.retreat_pricings.includes(:room_type)
+      pricings = pricings.select { |p| p.room_type&.status == "active" } unless all_pricing
+      data[:pricing] = pricings.map { |p| retreat_pricing(p) }
       data[:images] = r.retreat_images.ordered.map { |img| retreat_image(img) }
     end
 

@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2026_07_22_000003) do
+ActiveRecord::Schema[8.0].define(version: 2026_07_28_184500) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -379,6 +379,18 @@ ActiveRecord::Schema[8.0].define(version: 2026_07_22_000003) do
     t.index ["room_type_id"], name: "index_room_images_on_room_type_id"
   end
 
+  create_table "room_rate_tiers", force: :cascade do |t|
+    t.bigint "room_type_id", null: false
+    t.integer "min_rooms", null: false
+    t.date "starts_on"
+    t.date "ends_on"
+    t.integer "price_per_night_cents", null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["room_type_id", "min_rooms"], name: "index_room_rate_tiers_on_room_type_id_and_min_rooms"
+    t.index ["room_type_id"], name: "index_room_rate_tiers_on_room_type_id"
+  end
+
   create_table "room_types", force: :cascade do |t|
     t.bigint "hotel_id", null: false
     t.string "name", null: false
@@ -396,9 +408,11 @@ ActiveRecord::Schema[8.0].define(version: 2026_07_22_000003) do
     t.string "bed_type"
     t.string "amenities", default: [], array: true
     t.string "view_type"
+    t.string "status", default: "active", null: false
     t.index ["category"], name: "index_room_types_on_category"
     t.index ["hotel_id", "name"], name: "index_room_types_on_hotel_id_and_name", unique: true
     t.index ["hotel_id"], name: "index_room_types_on_hotel_id"
+    t.index ["status"], name: "index_room_types_on_status"
   end
 
   create_table "rooms", force: :cascade do |t|
@@ -519,6 +533,7 @@ ActiveRecord::Schema[8.0].define(version: 2026_07_22_000003) do
   add_foreign_key "retreats", "hotels"
   add_foreign_key "retreats", "organizations", column: "created_by_organization_id"
   add_foreign_key "room_images", "room_types"
+  add_foreign_key "room_rate_tiers", "room_types"
   add_foreign_key "room_types", "hotels"
   add_foreign_key "rooms", "hotels"
   add_foreign_key "rooms", "room_types"
