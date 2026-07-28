@@ -2,6 +2,10 @@ module Api
   module V1
     module Hotel
       class ProfilesController < BaseController
+        # The profile endpoint is the one place a hotel org without a Hotel
+        # record may go — updating it builds the record during onboarding.
+        skip_before_action :require_hotel_record!
+
         # GET /api/v1/hotel/profile
         def show
           render json: {
