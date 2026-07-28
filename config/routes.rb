@@ -67,6 +67,7 @@ Rails.application.routes.draw do
         resource :profile, only: %i[show update] do
           post :submit_for_review, on: :member
         end
+        resource :dashboard, only: [:show], controller: "dashboard"
         resources :room_types
         resources :rooms, only: %i[index create update destroy]
         resources :availability_blocks, only: %i[index create destroy]
