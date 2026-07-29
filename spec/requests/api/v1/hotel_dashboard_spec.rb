@@ -12,6 +12,11 @@ RSpec.describe "Hotel Dashboard API", type: :request do
     create(:booking, organization: agency, experience: experience, room_type: room_type, **attrs)
   end
 
+  # Date.current + N offsets must not spill into the next month, or the
+  # "revenue this month" expectations become date-of-run dependent.
+  before { travel_to Time.zone.local(Date.current.year, Date.current.month, 15, 12) }
+  after { travel_back }
+
   describe "GET /api/v1/hotel/dashboard" do
     it "returns the aggregated dashboard payload" do
       create(:room, room_type: room_type, number: "Suite 1")

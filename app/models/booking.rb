@@ -18,6 +18,7 @@ class Booking < ApplicationRecord
   validate :client_belongs_to_organization
   validate :room_type_belongs_to_experience_hotel
   validate :room_belongs_to_room_type
+  validate :room_type_has_availability, if: :availability_check_needed?
 
   scope :active, -> { where.not(status: "cancelled") }
 
@@ -87,5 +88,29 @@ class Booking < ApplicationRecord
     return if room.nil? || room_type.nil?
 
     errors.add(:room, "must belong to the selected room type") if room.room_type_id != room_type.id
+  end
+
+  # Overbooking guard: only newly claimed inventory is checked (create, or a
+  # change of room type/dates), so historical bookings always stay valid.
+  def availability_check_needed?
+    return false if status == "cancelled"
+    return false unless room_type && starts_on && ends_on && ends_on > starts_on
+
+    new_record? || will_save_change_to_room_type_id? ||
+      will_save_change_to_starts_on? || will_save_change_to_ends_on?
+  end
+
+  def room_type_has_availability
+    calc = RoomTypeAvailability.new(
+      room_type,
+      from: starts_on,
+      to: ends_on - 1, # checkout-exclusive
+      exclude_booking_id: id
+    )
+    # Room types without physical Room records don't track inventory; nothing
+    # to enforce against.
+    return unless calc.tracked?
+
+    errors.add(:room_type, "has no availability for the selected dates") if calc.min_available < 1
   end
 end
