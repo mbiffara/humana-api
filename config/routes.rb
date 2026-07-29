@@ -12,7 +12,9 @@ Rails.application.routes.draw do
 
       # Public discovery (no authentication) — for marketing / unauthenticated surfaces
       namespace :public do
-        resources :hotels, only: %i[index show]
+        resources :hotels, only: %i[index show] do
+          member { get :availability }
+        end
         resources :experiences, only: %i[index show]
       end
 

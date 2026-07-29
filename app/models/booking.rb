@@ -18,6 +18,8 @@ class Booking < ApplicationRecord
   validate :client_belongs_to_organization
   validate :room_type_belongs_to_experience_hotel
   validate :room_belongs_to_room_type
+  validate :room_type_has_availability, if: :availability_check_needed?
+  before_save :reverify_availability_under_lock, if: :availability_check_needed?
 
   scope :active, -> { where.not(status: "cancelled") }
 
@@ -87,5 +89,57 @@ class Booking < ApplicationRecord
     return if room.nil? || room_type.nil?
 
     errors.add(:room, "must belong to the selected room type") if room.room_type_id != room_type.id
+  end
+
+  # Overbooking guard: only newly claimed inventory is checked — create, a
+  # change of room type/dates, or reactivating a cancelled booking (its unit
+  # may have been taken while it was cancelled). Historical bookings always
+  # stay valid.
+  def availability_check_needed?
+    return false if status == "cancelled"
+    return false unless room_type && starts_on && ends_on && ends_on > starts_on
+
+    new_record? || will_save_change_to_room_type_id? ||
+      will_save_change_to_starts_on? || will_save_change_to_ends_on? ||
+      (will_save_change_to_status? && status_in_database == "cancelled")
+  end
+
+  def availability_calculator
+    RoomTypeAvailability.new(
+      room_type,
+      from: starts_on,
+      to: ends_on - 1, # checkout-exclusive
+      exclude_booking_id: id
+    )
+  end
+
+  def room_type_has_availability
+    calc = availability_calculator
+    # Room types without physical Room records don't track inventory; nothing
+    # to enforce against.
+    return unless calc.tracked?
+
+    errors.add(:room_type, "has no availability for the selected dates") if calc.min_available < 1
+  end
+
+  # The validation above is a read-then-write race: two concurrent requests
+  # can both see the last free unit before either insert commits. This hook
+  # runs inside the save transaction holding a per-room-type advisory lock
+  # (released at commit/rollback), so competing claims serialize and the
+  # recheck sees every previously committed booking.
+  INVENTORY_LOCK_NAMESPACE = 7201
+
+  def reverify_availability_under_lock
+    self.class.connection.execute(
+      ActiveRecord::Base.sanitize_sql_array(
+        ["SELECT pg_advisory_xact_lock(?, ?)", INVENTORY_LOCK_NAMESPACE, room_type_id]
+      )
+    )
+    calc = availability_calculator
+    return unless calc.tracked?
+    return if calc.min_available >= 1
+
+    errors.add(:room_type, "has no availability for the selected dates")
+    raise ActiveRecord::RecordInvalid, self
   end
 end
