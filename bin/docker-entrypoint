@@ -1,10 +1,10 @@
 #!/bin/bash -e
 
-# Enable running one-off commands like:
-#   docker run <image> ./bin/rails db:migrate
-#   ECS run-task --overrides '{"containerOverrides":[{"command":["./bin/rails","db:migrate"]}]}'
-#
-# When the container starts normally (rails server), it boots immediately
-# without blocking on migrations. Migrations run as a separate step in CI/CD.
+# Run pending migrations and seeds before starting the server.
+# The task definition health check (startPeriod: 90s) gives enough
+# time for this to complete before ECS starts checking /up.
+if [ "${@: -2:1}" == "./bin/rails" ] && [ "${@: -1:1}" == "server" ]; then
+  ./bin/rails db:prepare
+fi
 
 exec "${@}"
