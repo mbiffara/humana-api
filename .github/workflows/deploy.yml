@@ -1,7 +1,8 @@
 name: Deploy to Amazon ECS
 
 # Continuous deployment: every push to `main` builds the Docker image,
-# pushes it to ECR, and rolls out a new revision on ECS Fargate.
+# pushes it to ECR, runs database migrations, and rolls out a new
+# revision on ECS Fargate.
 on:
   push:
     branches: [main]
@@ -61,6 +62,77 @@ jobs:
           task-definition: ${{ env.ECS_TASK_DEFINITION }}
           container-name: ${{ env.CONTAINER_NAME }}
           image: ${{ steps.build-image.outputs.image }}
+
+      # Register the new task definition so the migration task uses the
+      # latest image (with the newest code + migration files).
+      - name: Register task definition for migration
+        id: register-task-def
+        run: |
+          TASK_DEF_ARN=$(aws ecs register-task-definition \
+            --cli-input-json file://${{ steps.task-def.outputs.task-definition }} \
+            --query 'taskDefinition.taskDefinitionArn' \
+            --output text)
+          echo "task_def_arn=$TASK_DEF_ARN" >> "$GITHUB_OUTPUT"
+
+      # Discover the service's network configuration so the migration
+      # task runs in the same VPC / subnets / security groups.
+      - name: Get network configuration from ECS service
+        id: network
+        run: |
+          NET_CONFIG=$(aws ecs describe-services \
+            --cluster "$ECS_CLUSTER" \
+            --services "$ECS_SERVICE" \
+            --query 'services[0].networkConfiguration' \
+            --output json)
+          echo "config=$NET_CONFIG" >> "$GITHUB_OUTPUT"
+
+      # Run database migrations as a one-off Fargate task BEFORE the
+      # rolling deploy, so the new schema is ready when new containers
+      # start receiving traffic.
+      - name: Run database migrations
+        id: migrate
+        run: |
+          TASK_ARN=$(aws ecs run-task \
+            --cluster "$ECS_CLUSTER" \
+            --task-definition "${{ steps.register-task-def.outputs.task_def_arn }}" \
+            --launch-type FARGATE \
+            --network-configuration '${{ steps.network.outputs.config }}' \
+            --overrides '{
+              "containerOverrides": [{
+                "name": "'"$CONTAINER_NAME"'",
+                "command": ["./bin/rails", "db:prepare"]
+              }]
+            }' \
+            --query 'tasks[0].taskArn' \
+            --output text)
+          echo "Migration task: $TASK_ARN"
+          echo "task_arn=$TASK_ARN" >> "$GITHUB_OUTPUT"
+
+      - name: Wait for migration to complete
+        run: |
+          echo "Waiting for migration task to finish..."
+          aws ecs wait tasks-stopped \
+            --cluster "$ECS_CLUSTER" \
+            --tasks "${{ steps.migrate.outputs.task_arn }}"
+
+          EXIT_CODE=$(aws ecs describe-tasks \
+            --cluster "$ECS_CLUSTER" \
+            --tasks "${{ steps.migrate.outputs.task_arn }}" \
+            --query 'tasks[0].containers[0].exitCode' \
+            --output text)
+
+          echo "Migration exit code: $EXIT_CODE"
+          if [ "$EXIT_CODE" != "0" ]; then
+            echo "::error::Migration failed with exit code $EXIT_CODE"
+            echo "Fetching migration logs..."
+            TASK_ID=$(echo "${{ steps.migrate.outputs.task_arn }}" | awk -F'/' '{print $NF}')
+            aws logs get-log-events \
+              --log-group-name "/ecs/humana-api" \
+              --log-stream-name "ecs/$CONTAINER_NAME/$TASK_ID" \
+              --query 'events[*].message' \
+              --output text 2>/dev/null || true
+            exit 1
+          fi
 
       - name: Deploy to Amazon ECS
         uses: aws-actions/amazon-ecs-deploy-task-definition@v2
