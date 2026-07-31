@@ -76,15 +76,17 @@ jobs:
 
       # Discover the service's network configuration so the migration
       # task runs in the same VPC / subnets / security groups.
+      # Write to a temp file to avoid multi-line JSON / quoting issues
+      # with GITHUB_OUTPUT.
       - name: Get network configuration from ECS service
-        id: network
         run: |
-          NET_CONFIG=$(aws ecs describe-services \
+          aws ecs describe-services \
             --cluster "$ECS_CLUSTER" \
             --services "$ECS_SERVICE" \
             --query 'services[0].networkConfiguration' \
-            --output json)
-          echo "config=$NET_CONFIG" >> "$GITHUB_OUTPUT"
+            --output json > /tmp/net-config.json
+          echo "Network config:"
+          cat /tmp/net-config.json
 
       # Run database migrations as a one-off Fargate task BEFORE the
       # rolling deploy, so the new schema is ready when new containers
@@ -96,13 +98,8 @@ jobs:
             --cluster "$ECS_CLUSTER" \
             --task-definition "${{ steps.register-task-def.outputs.task_def_arn }}" \
             --launch-type FARGATE \
-            --network-configuration '${{ steps.network.outputs.config }}' \
-            --overrides '{
-              "containerOverrides": [{
-                "name": "'"$CONTAINER_NAME"'",
-                "command": ["./bin/rails", "db:prepare"]
-              }]
-            }' \
+            --network-configuration file:///tmp/net-config.json \
+            --overrides '{"containerOverrides":[{"name":"'"$CONTAINER_NAME"'","command":["./bin/rails","db:prepare"]}]}' \
             --query 'tasks[0].taskArn' \
             --output text)
           echo "Migration task: $TASK_ARN"
