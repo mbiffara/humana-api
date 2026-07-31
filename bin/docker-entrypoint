@@ -1,9 +1,10 @@
 #!/bin/bash -e
 
-# If running the rails server then create or migrate existing database
-if [ "${@: -2:1}" == "./bin/rails" ] && [ "${@: -1:1}" == "server" ]; then
-  ./bin/rails db:prepare
-  ./bin/rails db:seed
-fi
+# Enable running one-off commands like:
+#   docker run <image> ./bin/rails db:migrate
+#   ECS run-task --overrides '{"containerOverrides":[{"command":["./bin/rails","db:migrate"]}]}'
+#
+# When the container starts normally (rails server), it boots immediately
+# without blocking on migrations. Migrations run as a separate step in CI/CD.
 
 exec "${@}"
