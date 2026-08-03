@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2026_08_02_100002) do
+ActiveRecord::Schema[8.0].define(version: 2026_08_02_200001) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -58,7 +58,7 @@ ActiveRecord::Schema[8.0].define(version: 2026_08_02_100002) do
 
   create_table "bookings", force: :cascade do |t|
     t.bigint "organization_id", null: false
-    t.bigint "experience_id", null: false
+    t.bigint "experience_id"
     t.bigint "client_id"
     t.string "reference", null: false
     t.integer "guests", default: 1, null: false
@@ -73,8 +73,10 @@ ActiveRecord::Schema[8.0].define(version: 2026_08_02_100002) do
     t.datetime "updated_at", null: false
     t.bigint "room_type_id"
     t.bigint "room_id"
+    t.bigint "hotel_id"
     t.index ["client_id"], name: "index_bookings_on_client_id"
     t.index ["experience_id"], name: "index_bookings_on_experience_id"
+    t.index ["hotel_id"], name: "index_bookings_on_hotel_id"
     t.index ["organization_id"], name: "index_bookings_on_organization_id"
     t.index ["reference"], name: "index_bookings_on_reference", unique: true
     t.index ["room_id"], name: "index_bookings_on_room_id"
@@ -521,6 +523,7 @@ ActiveRecord::Schema[8.0].define(version: 2026_08_02_100002) do
   add_foreign_key "availability_blocks", "room_types"
   add_foreign_key "bookings", "clients"
   add_foreign_key "bookings", "experiences"
+  add_foreign_key "bookings", "hotels", on_delete: :nullify
   add_foreign_key "bookings", "organizations"
   add_foreign_key "bookings", "room_types"
   add_foreign_key "bookings", "rooms"
