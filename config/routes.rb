@@ -64,6 +64,9 @@ Rails.application.routes.draw do
       namespace :agency do
         resource :profile, only: %i[show update]
         resource :dashboard, only: [:show], controller: "dashboard"
+        resource :subscription, only: %i[show create] do
+          get :plans, on: :collection
+        end
         resources :retreats do
           member do
             post :submit_for_review
