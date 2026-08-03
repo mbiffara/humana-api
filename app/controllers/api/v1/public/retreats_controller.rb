@@ -19,11 +19,9 @@ module Api
         def show
           retreat = Retreat.published
             .includes(
-              :hotel,
+              :hotel, :retreat_facilitators, :retreat_inclusions, :retreat_images,
               retreat_days: :retreat_activities,
-              :retreat_facilitators, :retreat_inclusions,
-              retreat_pricings: :room_type,
-              :retreat_images
+              retreat_pricings: :room_type
             )
             .find_by(slug: params[:id]) || Retreat.published.find(params[:id])
 
