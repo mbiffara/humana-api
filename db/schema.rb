@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2026_07_28_184500) do
+ActiveRecord::Schema[8.0].define(version: 2026_08_02_100002) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -231,6 +231,12 @@ ActiveRecord::Schema[8.0].define(version: 2026_07_28_184500) do
     t.datetime "onboarding_completed_at"
     t.bigint "assigned_office_id"
     t.string "address"
+    t.string "bank_account_holder"
+    t.string "bank_iban"
+    t.string "bank_swift"
+    t.string "bank_currency", default: "USD"
+    t.string "bank_country"
+    t.string "bank_status", default: "pending"
     t.index ["assigned_office_id"], name: "index_organizations_on_assigned_office_id"
     t.index ["kind"], name: "index_organizations_on_kind"
     t.index ["status"], name: "index_organizations_on_status"
@@ -501,8 +507,11 @@ ActiveRecord::Schema[8.0].define(version: 2026_07_28_184500) do
     t.string "avatar_url"
     t.string "phone"
     t.datetime "onboarding_completed_at"
+    t.string "password_reset_token"
+    t.datetime "password_reset_sent_at"
     t.index "lower((email)::text)", name: "index_users_on_lower_email", unique: true
     t.index ["organization_id"], name: "index_users_on_organization_id"
+    t.index ["password_reset_token"], name: "index_users_on_password_reset_token", unique: true
     t.index ["status"], name: "index_users_on_status"
   end
 
