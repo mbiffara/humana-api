@@ -15,6 +15,9 @@ Rails.application.routes.draw do
       post   "auth/request_password_reset", to: "sessions#request_password_reset"
       post   "auth/reset_password",         to: "sessions#reset_password"
 
+      # Stripe webhooks (no authentication — verified via signature)
+      post "webhooks/stripe", to: "webhooks#stripe"
+
       # Public discovery (no authentication) — for marketing / unauthenticated surfaces
       namespace :public do
         resources :hotels, only: %i[index show] do
@@ -64,7 +67,7 @@ Rails.application.routes.draw do
       namespace :agency do
         resource :profile, only: %i[show update]
         resource :dashboard, only: [:show], controller: "dashboard"
-        resource :subscription, only: %i[show create] do
+        resource :subscription, only: %i[show create update destroy] do
           get :plans, on: :collection
         end
         resources :retreats do
@@ -85,7 +88,7 @@ Rails.application.routes.draw do
         resource :profile, only: %i[show update] do
           post :submit_for_review, on: :member
         end
-        resource :subscription, only: %i[show create] do
+        resource :subscription, only: %i[show create update destroy] do
           get :plans, on: :collection
         end
         resource :dashboard, only: [:show], controller: "dashboard"

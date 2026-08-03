@@ -20,7 +20,18 @@ module Api
 
       # GET /api/v1/auth/me
       def show
-        render json: { user: ApiSerializers.user(current_user) }
+        data = { user: ApiSerializers.user(current_user) }
+
+        # Include active subscription for hotel/agency roles (paywall support)
+        if current_user.organization&.kind&.in?(%w[hotel agency])
+          sub = current_user.organization.subscriptions.active_or_trialing
+                  .includes(:subscription_plan)
+                  .order(created_at: :desc)
+                  .first
+          data[:subscription] = sub ? ApiSerializers.subscription(sub) : nil
+        end
+
+        render json: data
       end
 
       # PATCH /api/v1/auth/me

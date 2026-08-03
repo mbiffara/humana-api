@@ -17,19 +17,50 @@ module Api
         # POST /api/v1/agency/subscription
         def create
           plan = SubscriptionPlan.find(params[:plan_id])
+          service = SubscriptionService.new(current_organization)
 
-          sub = current_organization.subscriptions.find_or_initialize_by(status: %w[active trialing])
-          if sub.new_record?
-            sub = current_organization.subscriptions.build
+          result = service.create(
+            plan,
+            success_url: "#{web_url}/agency/settings?tab=subscription&stripe=success",
+            cancel_url: "#{web_url}/agency/settings?tab=subscription&stripe=cancelled"
+          )
+
+          if result.checkout_url
+            render json: { checkout_url: result.checkout_url }
+          else
+            render json: { subscription: ApiSerializers.subscription(result.subscription) }, status: :created
           end
+        end
 
-          sub.subscription_plan = plan
-          sub.status = "active"
-          sub.current_period_start = Time.current
-          sub.current_period_end = 1.month.from_now
-          sub.save!
+        # PUT /api/v1/agency/subscription
+        def update
+          plan = SubscriptionPlan.find(params[:plan_id])
+          service = SubscriptionService.new(current_organization)
 
-          render json: { subscription: ApiSerializers.subscription(sub) }, status: :created
+          result = service.update_plan(
+            plan,
+            success_url: "#{web_url}/agency/settings?tab=subscription&stripe=success",
+            cancel_url: "#{web_url}/agency/settings?tab=subscription&stripe=cancelled"
+          )
+
+          if result.checkout_url
+            render json: { checkout_url: result.checkout_url }
+          else
+            render json: { subscription: ApiSerializers.subscription(result.subscription) }
+          end
+        end
+
+        # DELETE /api/v1/agency/subscription
+        def destroy
+          service = SubscriptionService.new(current_organization)
+          sub = service.cancel
+          render json: { subscription: ApiSerializers.subscription(sub) }
+        end
+
+        private
+
+        def web_url
+          ENV.fetch("HUMANA_WEB_URL", "http://localhost:3000")
         end
       end
     end
