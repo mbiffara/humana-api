@@ -12,7 +12,10 @@ module Api
           scope = scope.certified if ActiveModel::Type::Boolean.new.cast(params[:certified])
 
           render json: {
-            hotels: paginate(scope).map { |h| ApiSerializers.hotel(h) },
+            hotels: paginate(scope.includes(:hotel_images)).map { |h|
+              cover = h.hotel_images.min_by { |img| [img.is_cover ? 0 : 1, img.position] }
+              ApiSerializers.hotel(h).merge(cover_image_url: cover&.image_url)
+            },
             meta: meta_for(scope)
           }
         end
