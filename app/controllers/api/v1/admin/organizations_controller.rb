@@ -57,7 +57,7 @@ module Api
         def organization_params
           params.require(:organization).permit(
             :name, :kind, :status, :city, :country, :country_code,
-            :contact_email, :website
+            :contact_email, :website, :sponsored
           )
         end
 
