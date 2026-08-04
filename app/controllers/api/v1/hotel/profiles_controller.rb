@@ -44,7 +44,12 @@ module Api
 
         # POST /api/v1/hotel/profile/submit_for_review
         def submit_for_review
-          current_organization.update!(onboarding_completed_at: Time.current)
+          current_organization.update!(
+            onboarding_completed_at: Time.current,
+            pending_changes: false,
+            review_feedback: nil,
+            review_feedback_at: nil
+          )
           render json: { user: ApiSerializers.user(current_user.reload) }
         end
 

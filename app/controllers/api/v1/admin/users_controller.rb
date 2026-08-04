@@ -170,10 +170,13 @@ module Api
         end
 
         # POST /api/v1/admin/users/:id/send_feedback
-        # Sends feedback email to a hotel without changing their status.
+        # Sends feedback email to a hotel and marks the submission as
+        # "changes requested" until the hotel publishes changes again.
         def send_feedback
           message = params[:message].to_s.strip
           return render json: { error: "Message is required" }, status: :unprocessable_entity if message.blank?
+
+          @user.organization&.update!(review_feedback: message, review_feedback_at: Time.current)
 
           begin
             ModerationMailer.feedback(@user, message).deliver_now

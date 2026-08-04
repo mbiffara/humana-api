@@ -1,0 +1,5 @@
+class AddPendingChangesToOrganizations < ActiveRecord::Migration[8.0]
+  def change
+    add_column :organizations, :pending_changes, :boolean, default: false, null: false
+  end
+end
