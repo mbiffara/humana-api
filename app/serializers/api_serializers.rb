@@ -18,6 +18,9 @@ module ApiSerializers
       website: org.website,
       onboarding_completed: org.onboarding_completed?,
       sponsored: org.sponsored,
+      pending_changes: org.pending_changes,
+      review_feedback: org.review_feedback,
+      review_feedback_at: org.review_feedback_at&.iso8601,
       hotel_id: org.hotel? ? org.hotels.first&.id : nil,
       created_at: org.created_at&.iso8601
     }
