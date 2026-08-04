@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2026_08_02_200001) do
+ActiveRecord::Schema[8.0].define(version: 2026_08_04_120000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -239,6 +239,7 @@ ActiveRecord::Schema[8.0].define(version: 2026_08_02_200001) do
     t.string "bank_currency", default: "USD"
     t.string "bank_country"
     t.string "bank_status", default: "pending"
+    t.boolean "sponsored", default: false, null: false
     t.index ["assigned_office_id"], name: "index_organizations_on_assigned_office_id"
     t.index ["kind"], name: "index_organizations_on_kind"
     t.index ["status"], name: "index_organizations_on_status"

@@ -71,6 +71,17 @@ RSpec.describe "Admin Organizations API", type: :request do
       expect(response).to have_http_status(:ok)
       expect(agency.reload.name).to eq("Updated Agency")
     end
+
+    it "toggles sponsored access for a hotel organization" do
+      patch "/api/v1/admin/organizations/#{hotel_org.id}",
+            params: { organization: { sponsored: true } }.to_json,
+            headers: auth_headers(admin)
+
+      expect(response).to have_http_status(:ok)
+      expect(hotel_org.reload.sponsored).to be(true)
+      body = JSON.parse(response.body)
+      expect(body["organization"]["sponsored"]).to be(true)
+    end
   end
 
   describe "DELETE /api/v1/admin/organizations/:id" do

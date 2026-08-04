@@ -17,6 +17,7 @@ module ApiSerializers
       contact_email: org.contact_email,
       website: org.website,
       onboarding_completed: org.onboarding_completed?,
+      sponsored: org.sponsored,
       hotel_id: org.hotel? ? org.hotels.first&.id : nil,
       created_at: org.created_at&.iso8601
     }
