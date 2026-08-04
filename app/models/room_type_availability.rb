@@ -10,13 +10,13 @@ class RoomTypeAvailability
     @exclude_booking_id = exclude_booking_id
   end
 
-  # Rooms currently in service (maintenance/out-of-service excluded).
+  # Rooms currently in service (out-of-service excluded).
   def operational
     @operational ||= @room_type.rooms.where(status: "available").count
   end
 
   # Inventory is tracked as soon as physical Room records exist — even when
-  # every room is in maintenance (operational 0 then means "nothing bookable",
+  # every room is out of service (operational 0 then means "nothing bookable",
   # not "nothing to enforce"). Only roomless types skip enforcement.
   def tracked?
     return @tracked if defined?(@tracked)

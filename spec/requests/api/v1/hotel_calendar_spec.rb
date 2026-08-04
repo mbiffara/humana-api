@@ -32,8 +32,8 @@ RSpec.describe "Hotel Calendar API", type: :request do
     expect(days["2026-08-12"]).to include("booked" => 0, "available" => 2)
   end
 
-  it "excludes cancelled bookings and rooms under maintenance" do
-    suite.rooms.first.update!(status: "maintenance")
+  it "excludes cancelled bookings and rooms out of service" do
+    suite.rooms.first.update!(status: "out_of_service")
     create(:booking, organization: agency, experience: experience, room_type: suite,
                      status: "cancelled",
                      starts_on: Date.new(2026, 8, 10), ends_on: Date.new(2026, 8, 12))
