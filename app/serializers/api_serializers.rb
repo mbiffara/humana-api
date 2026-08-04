@@ -95,7 +95,7 @@ module ApiSerializers
       logo_url: hotel.logo_url,
       website: hotel.website,
       contact_email: hotel.contact_email,
-      room_types: hotel.room_types.ordered.map { |rt| room_type(rt) },
+      room_types: hotel.room_types.ordered.map { |rt| room_type(rt, include_details: true) },
       amenities: hotel.hotel_amenities.order(:category, :position).map { |a|
         { id: a.id, name: a.name, category: a.category, icon: a.icon, position: a.position, featured: a.featured }
       },
