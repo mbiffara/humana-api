@@ -116,6 +116,30 @@ plans_data.each do |attrs|
   end
 end
 
+# Hotel subscription plans
+hotel_plans_data = [
+  { name: "Hotel Starter", price_cents: 4900, commission_rate: 0.16, trial_days: 14, position: 0,
+    target_audience: "hotel",
+    features: { basic_listing: true, email_support: true, max_room_types: 5 } },
+  { name: "Hotel Professional", price_cents: 9900, commission_rate: 0.14, trial_days: 14, position: 1,
+    target_audience: "hotel",
+    features: { featured_listing: true, priority_support: true, unlimited_room_types: true,
+                retreat_creation: true, analytics: true } },
+  { name: "Hotel Enterprise", price_cents: 19900, commission_rate: 0.12, trial_days: 30, position: 2,
+    target_audience: "hotel",
+    features: { premium_listing: true, dedicated_support: true, unlimited_everything: true,
+                api_access: true, white_label: true } },
+]
+
+hotel_plans_data.each do |attrs|
+  SubscriptionPlan.find_or_create_by!(name: attrs[:name]) do |p|
+    p.assign_attributes(attrs)
+    p.currency = "USD"
+    p.billing_interval = "monthly"
+    p.active = true
+  end
+end
+
 puts "Done."
 puts "  Organizations: #{Organization.count}"
 puts "  Users:         #{User.count}"
@@ -123,3 +147,8 @@ puts "  Countries:     #{Country.count}"
 puts "  Sub Plans:     #{SubscriptionPlan.count}"
 puts ""
 puts "Login: admin@humana.global / humana1234"
+
+# --- Development-only test data -----------------------------------------------
+if Rails.env.development?
+  load Rails.root.join("db/seeds/development.rb")
+end

@@ -31,7 +31,13 @@ module ApiSerializers
         description: org.description,
         logo_url: org.logo_url,
         specialties: org.specialties,
-        onboarding_completed_at: org.onboarding_completed_at
+        onboarding_completed_at: org.onboarding_completed_at,
+        bank_account_holder: org.bank_account_holder,
+        bank_iban: org.bank_iban,
+        bank_swift: org.bank_swift,
+        bank_currency: org.bank_currency,
+        bank_country: org.bank_country,
+        bank_status: org.bank_status,
       )
     end
 
@@ -164,6 +170,7 @@ module ApiSerializers
       created_at: booking.created_at
     }
     data[:experience] = experience(booking.experience) if include_experience
+    data[:hotel] = hotel(booking.hotel) if booking.hotel_id && !booking.experience_id
     data
   end
 

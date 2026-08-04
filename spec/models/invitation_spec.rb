@@ -36,9 +36,9 @@ RSpec.describe Invitation, type: :model do
   end
 
   describe "expiry" do
-    it "sets expires_at to 48 hours from creation" do
+    it "sets expires_at to 7 days from creation" do
       invitation = create(:invitation, organization: org, invited_by: admin)
-      expect(invitation.expires_at).to be_within(1.minute).of(48.hours.from_now)
+      expect(invitation.expires_at).to be_within(1.minute).of(7.days.from_now)
     end
 
     it "#expired? returns true for past expiry" do

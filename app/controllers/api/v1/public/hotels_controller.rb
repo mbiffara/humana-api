@@ -20,7 +20,7 @@ module Api
         # GET /api/v1/public/hotels/:id
         def show
           hotel = ::Hotel.find(params[:id])
-          render json: { hotel: ApiSerializers.hotel(hotel) }
+          render json: { hotel: ApiSerializers.hotel_full(hotel) }
         end
 
         MAX_AVAILABILITY_RANGE_DAYS = 92

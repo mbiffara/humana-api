@@ -45,7 +45,7 @@ module Api
       end
 
       def booking_params
-        params.require(:booking).permit(:experience_id, :client_id, :room_type_id, :guests, :notes)
+        params.require(:booking).permit(:experience_id, :hotel_id, :client_id, :room_type_id, :guests, :notes, :starts_on, :ends_on)
       end
 
       def update_params

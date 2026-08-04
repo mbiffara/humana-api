@@ -23,9 +23,22 @@ module Api
           current_organization.update!(name: hotel.name) if hotel.name.present?
           current_user.update!(name: params[:user_name]) if params[:user_name].present?
           current_user.update!(phone: params[:user_phone]) if params[:user_phone].present?
+
+          # Bank details (nested under organization key)
+          if params[:organization].present?
+            bank_attrs = params.require(:organization).permit(
+              :bank_account_holder, :bank_iban, :bank_swift,
+              :bank_currency, :bank_country
+            )
+            if bank_attrs.values.any?(&:present?)
+              bank_attrs[:bank_status] = "configured"
+              current_organization.update!(bank_attrs)
+            end
+          end
+
           render json: {
             hotel: ApiSerializers.hotel_full(hotel),
-            organization: ApiSerializers.organization(current_organization, include_onboarding: true)
+            organization: ApiSerializers.organization(current_organization.reload, include_onboarding: true)
           }
         end
 
@@ -42,7 +55,7 @@ module Api
             :name, :city, :country, :country_code, :latitude, :longitude,
             :description, :address, :certified, :wellness_standard,
             :phone, :stars, :check_in_time, :check_out_time, :total_rooms,
-            :website, :contact_email, :postal_code
+            :website, :contact_email, :postal_code, :logo_url
           )
         end
       end

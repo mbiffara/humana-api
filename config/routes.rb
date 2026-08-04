@@ -5,10 +5,18 @@ Rails.application.routes.draw do
   namespace :api do
     namespace :v1 do
       # Authentication
-      post   "auth/login",  to: "sessions#create"
-      get    "auth/me",     to: "sessions#show"
-      patch  "auth/me",     to: "sessions#update"
-      delete "auth/logout", to: "sessions#destroy"
+      post   "auth/login",       to: "sessions#create"
+      get    "auth/me",          to: "sessions#show"
+      patch  "auth/me",          to: "sessions#update"
+      delete "auth/logout",      to: "sessions#destroy"
+      patch  "auth/password",    to: "sessions#change_password"
+      post   "auth/deactivate",              to: "sessions#deactivate"
+      delete "auth/account",                to: "sessions#delete_account"
+      post   "auth/request_password_reset", to: "sessions#request_password_reset"
+      post   "auth/reset_password",         to: "sessions#reset_password"
+
+      # Stripe webhooks (no authentication — verified via signature)
+      post "webhooks/stripe", to: "webhooks#stripe"
 
       # Public discovery (no authentication) — for marketing / unauthenticated surfaces
       namespace :public do
@@ -16,6 +24,7 @@ Rails.application.routes.draw do
           member { get :availability }
         end
         resources :experiences, only: %i[index show]
+        resources :retreats, only: %i[index show]
       end
 
       # Invitation acceptance (no authentication)
@@ -57,6 +66,16 @@ Rails.application.routes.draw do
       # Agency workspace
       namespace :agency do
         resource :profile, only: %i[show update]
+        resource :dashboard, only: [:show], controller: "dashboard"
+        resource :subscription, only: %i[show create update destroy] do
+          get :plans, on: :collection
+        end
+        resources :retreats do
+          member do
+            post :submit_for_review
+            put "program" => "retreats#replace_program"
+          end
+        end
       end
 
       # Office workspace
@@ -68,6 +87,9 @@ Rails.application.routes.draw do
       namespace :hotel do
         resource :profile, only: %i[show update] do
           post :submit_for_review, on: :member
+        end
+        resource :subscription, only: %i[show create update destroy] do
+          get :plans, on: :collection
         end
         resource :dashboard, only: [:show], controller: "dashboard"
         resources :room_types do
@@ -84,6 +106,12 @@ Rails.application.routes.draw do
         end
         resources :images, only: %i[index create destroy], controller: "images" do
           collection { post :batch }
+        end
+        resources :bookings, only: %i[index show update] do
+          member do
+            post :confirm
+            post :cancel
+          end
         end
         resources :retreats do
           member do

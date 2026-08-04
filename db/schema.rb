@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2026_07_28_184500) do
+ActiveRecord::Schema[8.0].define(version: 2026_08_02_200001) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -58,7 +58,7 @@ ActiveRecord::Schema[8.0].define(version: 2026_07_28_184500) do
 
   create_table "bookings", force: :cascade do |t|
     t.bigint "organization_id", null: false
-    t.bigint "experience_id", null: false
+    t.bigint "experience_id"
     t.bigint "client_id"
     t.string "reference", null: false
     t.integer "guests", default: 1, null: false
@@ -73,8 +73,10 @@ ActiveRecord::Schema[8.0].define(version: 2026_07_28_184500) do
     t.datetime "updated_at", null: false
     t.bigint "room_type_id"
     t.bigint "room_id"
+    t.bigint "hotel_id"
     t.index ["client_id"], name: "index_bookings_on_client_id"
     t.index ["experience_id"], name: "index_bookings_on_experience_id"
+    t.index ["hotel_id"], name: "index_bookings_on_hotel_id"
     t.index ["organization_id"], name: "index_bookings_on_organization_id"
     t.index ["reference"], name: "index_bookings_on_reference", unique: true
     t.index ["room_id"], name: "index_bookings_on_room_id"
@@ -231,6 +233,12 @@ ActiveRecord::Schema[8.0].define(version: 2026_07_28_184500) do
     t.datetime "onboarding_completed_at"
     t.bigint "assigned_office_id"
     t.string "address"
+    t.string "bank_account_holder"
+    t.string "bank_iban"
+    t.string "bank_swift"
+    t.string "bank_currency", default: "USD"
+    t.string "bank_country"
+    t.string "bank_status", default: "pending"
     t.index ["assigned_office_id"], name: "index_organizations_on_assigned_office_id"
     t.index ["kind"], name: "index_organizations_on_kind"
     t.index ["status"], name: "index_organizations_on_status"
@@ -501,8 +509,11 @@ ActiveRecord::Schema[8.0].define(version: 2026_07_28_184500) do
     t.string "avatar_url"
     t.string "phone"
     t.datetime "onboarding_completed_at"
+    t.string "password_reset_token"
+    t.datetime "password_reset_sent_at"
     t.index "lower((email)::text)", name: "index_users_on_lower_email", unique: true
     t.index ["organization_id"], name: "index_users_on_organization_id"
+    t.index ["password_reset_token"], name: "index_users_on_password_reset_token", unique: true
     t.index ["status"], name: "index_users_on_status"
   end
 
@@ -512,6 +523,7 @@ ActiveRecord::Schema[8.0].define(version: 2026_07_28_184500) do
   add_foreign_key "availability_blocks", "room_types"
   add_foreign_key "bookings", "clients"
   add_foreign_key "bookings", "experiences"
+  add_foreign_key "bookings", "hotels", on_delete: :nullify
   add_foreign_key "bookings", "organizations"
   add_foreign_key "bookings", "room_types"
   add_foreign_key "bookings", "rooms"

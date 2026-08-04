@@ -25,6 +25,9 @@ gem "rack-cors"
 # Transactional email via Resend
 gem "resend", "~> 0.17"
 
+# Stripe Billing — subscriptions, checkout, webhooks
+gem "stripe", "~> 13.0"
+
 # AWS S3 for Active Storage in production
 gem "aws-sdk-s3", require: false
 

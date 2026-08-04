@@ -2,10 +2,13 @@ class Booking < ApplicationRecord
   STATUSES = %w[inquiry confirmed cancelled completed].freeze
 
   belongs_to :organization # the booking agency
-  belongs_to :experience
+  belongs_to :experience, optional: true
+  belongs_to :hotel, optional: true     # direct hotel booking (no experience)
   belongs_to :client, optional: true
   belongs_to :room_type, optional: true # accommodation category chosen by the agency
   belongs_to :room, optional: true      # specific room assigned by the hotel
+
+  validate :has_experience_or_hotel
 
   before_validation :assign_reference, on: :create
   before_validation :snapshot_dates, on: :create
@@ -52,15 +55,36 @@ class Booking < ApplicationRecord
 
   # Total = per-guest price * guests; commission derived from the experience rate.
   def compute_amounts
-    return unless experience
+    if experience
+      compute_experience_amounts
+    elsif room_type && starts_on && ends_on
+      compute_lodging_amounts
+    end
+  end
 
-    # Inherit the experience currency unless the caller explicitly set one —
-    # the column's "USD" default must not mislabel non-USD experiences.
+  def compute_experience_amounts
     if currency.blank? || (new_record? && !will_save_change_to_currency?)
       self.currency = experience.currency
     end
     self.amount_cents = experience.price_cents * guests if amount_cents.to_i.zero?
     self.commission_cents = (amount_cents * experience.commission_rate).round
+  end
+
+  # Direct hotel booking: price from room_type * nights * guests.
+  # Commission from platform default rate.
+  def compute_lodging_amounts
+    nights = (ends_on - starts_on).to_i
+    return if nights <= 0
+
+    if currency.blank? || (new_record? && !will_save_change_to_currency?)
+      self.currency = room_type.currency
+    end
+    if amount_cents.to_i.zero?
+      self.amount_cents = room_type.price_per_night_cents * nights * guests
+    end
+    platform = PlatformSetting.current
+    rate = platform&.agency_commission_rate || 0.16
+    self.commission_cents = (amount_cents * rate).round
   end
 
   def client_belongs_to_organization
@@ -73,10 +97,19 @@ class Booking < ApplicationRecord
     self.room_type ||= room&.room_type
   end
 
-  def room_type_belongs_to_experience_hotel
-    return if room_type.nil? || experience.nil?
+  def has_experience_or_hotel
+    return if experience_id.present? || hotel_id.present?
 
-    if room_type.hotel_id != experience.hotel_id
+    errors.add(:base, "must have either an experience or a hotel")
+  end
+
+  def room_type_belongs_to_experience_hotel
+    return if room_type.nil?
+
+    target_hotel_id = experience&.hotel_id || hotel_id
+    return if target_hotel_id.nil?
+
+    if room_type.hotel_id != target_hotel_id
       errors.add(:room_type, "must belong to the experience's hotel")
     elsif room_type.status != "active" && (new_record? || will_save_change_to_room_type_id?)
       # Draft/inactive types are retired from sale; only newly selected room
