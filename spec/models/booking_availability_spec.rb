@@ -108,7 +108,7 @@ RSpec.describe Booking, "availability check" do
     end
 
     it "enforces when rooms exist but none are operational" do
-      room_type.rooms.first.update!(status: "maintenance")
+      room_type.rooms.first.update!(status: "out_of_service")
 
       booking = build_booking
       expect(booking).not_to be_valid

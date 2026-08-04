@@ -1,6 +1,6 @@
 # Hotel-scoped CRUD for physical rooms. Rooms are auto-generated from each
 # room type's total_rooms count; hotels can rename, renumber, add or remove
-# them, and flag rooms under maintenance. total_rooms is kept in sync.
+# them, and flag rooms out of service. total_rooms is kept in sync.
 module Api
   module V1
     module Hotel

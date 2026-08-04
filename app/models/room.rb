@@ -3,7 +3,7 @@
 # and nightly pricing. Auto-generated rooms are created to match the room
 # type's total_rooms count and can be renamed by the hotel afterwards.
 class Room < ApplicationRecord
-  STATUSES = %w[available maintenance out_of_service].freeze
+  STATUSES = %w[available out_of_service].freeze
 
   belongs_to :hotel
   belongs_to :room_type

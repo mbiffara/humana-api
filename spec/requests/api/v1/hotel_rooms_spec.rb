@@ -9,7 +9,7 @@ RSpec.describe "Hotel Rooms API", type: :request do
   describe "GET /api/v1/hotel/rooms" do
     before do
       create(:room, room_type: room_type, number: "Suite 1")
-      create(:room, room_type: room_type, number: "Suite 2", status: "maintenance")
+      create(:room, room_type: room_type, number: "Suite 2", status: "out_of_service")
     end
 
     it "lists the hotel's rooms" do
@@ -21,7 +21,7 @@ RSpec.describe "Hotel Rooms API", type: :request do
     end
 
     it "filters by status" do
-      get "/api/v1/hotel/rooms?status=maintenance", headers: auth_headers(owner)
+      get "/api/v1/hotel/rooms?status=out_of_service", headers: auth_headers(owner)
 
       body = JSON.parse(response.body)
       expect(body["rooms"].map { |r| r["number"] }).to eq(["Suite 2"])
@@ -70,12 +70,12 @@ RSpec.describe "Hotel Rooms API", type: :request do
     it "renames a room and updates its status" do
       room = create(:room, room_type: room_type, number: "Suite 1")
       patch "/api/v1/hotel/rooms/#{room.id}",
-            params: { room: { number: "Villa Azul", status: "maintenance" } }.to_json,
+            params: { room: { number: "Villa Azul", status: "out_of_service" } }.to_json,
             headers: auth_headers(owner)
 
       expect(response).to have_http_status(:ok)
       expect(room.reload.number).to eq("Villa Azul")
-      expect(room.status).to eq("maintenance")
+      expect(room.status).to eq("out_of_service")
     end
 
     it "returns 404 for another hotel's room" do
