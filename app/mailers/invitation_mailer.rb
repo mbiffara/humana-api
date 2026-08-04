@@ -87,8 +87,9 @@ class InvitationMailer < ApplicationMailer
     @inviter_name = invitation.invited_by&.name || "HUMANA"
     @assigned_office = invitation.organization.assigned_office
 
-    # Hotel invites identify the invited user rather than the (placeholder) organization
-    if invitation.organization.hotel?
+    # Hotel and agency invites identify the invited user rather than the
+    # (placeholder) organization
+    if invitation.organization.hotel? || invitation.organization.agency?
       @detail_label = @t[:user]
       @detail_value = invitation.email
     else
