@@ -61,6 +61,7 @@ Rails.application.routes.draw do
             post :close
           end
         end
+        resources :bookings, only: [:index]
       end
 
       # Agency workspace
