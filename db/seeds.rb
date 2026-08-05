@@ -27,6 +27,8 @@ if non_admin_orgs.exists?
   RetreatImage.delete_all
   Retreat.delete_all
   RoomImage.delete_all
+  AvailabilityBlock.delete_all
+  Room.delete_all
   RoomType.delete_all
   HotelAmenity.delete_all
   HotelImage.delete_all
@@ -81,7 +83,8 @@ countries_data = [
   { name: "Colombia", code: "CO", flag_emoji: "\u{1F1E8}\u{1F1F4}", region: "LATAM", currency_code: "COP", timezone: "America/Bogota" },
   { name: "Italia", code: "IT", flag_emoji: "\u{1F1EE}\u{1F1F9}", region: "Europe", currency_code: "EUR", timezone: "Europe/Rome" },
   { name: "Grecia", code: "GR", flag_emoji: "\u{1F1EC}\u{1F1F7}", region: "Europe", currency_code: "EUR", timezone: "Europe/Athens" },
-  { name: "India", code: "IN", flag_emoji: "\u{1F1EE}\u{1F1F3}", region: "APAC", currency_code: "INR", timezone: "Asia/Kolkata" }
+  { name: "India", code: "IN", flag_emoji: "\u{1F1EE}\u{1F1F3}", region: "APAC", currency_code: "INR", timezone: "Asia/Kolkata" },
+  { name: "Argentina", code: "AR", flag_emoji: "\u{1F1E6}\u{1F1F7}", region: "LATAM", currency_code: "ARS", timezone: "America/Argentina/Buenos_Aires" }
 ]
 
 countries_data.each do |attrs|
