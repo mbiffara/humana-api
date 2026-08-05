@@ -81,6 +81,20 @@ Rails.application.routes.draw do
       # Office workspace
       namespace :office do
         resource :profile, only: %i[show update]
+        resource :dashboard, only: [:show], controller: "dashboard" do
+          post :contact_admin, on: :member
+        end
+        resources :hotels, only: %i[index show]
+        resources :agencies, only: %i[index show]
+        resources :bookings, only: %i[index show]
+        resources :retreats, only: %i[index show]
+        resource :revenue, only: [:show], controller: "revenue"
+        resources :members, only: [:index] do
+          collection { post :invite }
+        end
+        resources :users, only: %i[index show] do
+          collection { post :invite }
+        end
       end
 
       # Hotel workspace
