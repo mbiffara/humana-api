@@ -18,17 +18,39 @@ module Api
                            Arel.sql("AVG(hotels.longitude)")
                          )
 
-        markers = rows.map do |code, country, total, active, lat, lng|
-          {
+        # Hotel-published retreats are a separate catalog — merge their counts
+        retreat_rows = Retreat.published
+                              .in_enabled_country
+                              .joins(:hotel)
+                              .group(:country_code, :country)
+                              .pluck(
+                                :country_code,
+                                :country,
+                                Arel.sql("COUNT(*)"),
+                                Arel.sql("COUNT(*) FILTER (WHERE retreats.status = 'active')"),
+                                Arel.sql("AVG(hotels.latitude)"),
+                                Arel.sql("AVG(hotels.longitude)")
+                              )
+
+        by_code = {}
+        (rows + retreat_rows).each do |code, country, total, active, lat, lng|
+          marker = by_code[code] ||= {
             country_code: code,
             country: country,
-            experiences: total.to_i,
-            active: active.to_i,
-            upcoming: total.to_i - active.to_i,
+            experiences: 0,
+            active: 0,
+            upcoming: 0,
             latitude: lat&.to_f,
             longitude: lng&.to_f
           }
-        end.sort_by { |m| -m[:experiences] }
+          marker[:experiences] += total.to_i
+          marker[:active] += active.to_i
+          marker[:upcoming] = marker[:experiences] - marker[:active]
+          marker[:latitude] ||= lat&.to_f
+          marker[:longitude] ||= lng&.to_f
+        end
+
+        markers = by_code.values.sort_by { |m| -m[:experiences] }
 
         render json: {
           markers: markers,
