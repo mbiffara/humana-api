@@ -154,7 +154,7 @@ module Api
         end
 
         def hotel_bookings
-          ::Booking.active.joins(:experience).where(experiences: { hotel_id: current_hotel.id })
+          ::Booking.active.for_hotel(current_hotel)
         end
       end
     end

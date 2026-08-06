@@ -38,8 +38,7 @@ module Api
 
         def overlapping_bookings(from, to)
           ::Booking.active
-                   .joins(:experience)
-                   .where(experiences: { hotel_id: current_hotel.id })
+                   .for_hotel(current_hotel)
                    .where.not(starts_on: nil)
                    .where.not(ends_on: nil)
                    .where("bookings.starts_on <= ? AND bookings.ends_on >= ?", to, from)

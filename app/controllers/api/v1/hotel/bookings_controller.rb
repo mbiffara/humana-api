@@ -63,7 +63,7 @@ module Api
         private
 
         def hotel_bookings
-          Booking.joins(:experience).where(experiences: { hotel_id: current_hotel.id })
+          Booking.for_hotel(current_hotel)
         end
 
         def set_booking
