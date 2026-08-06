@@ -19,6 +19,7 @@ class Booking < ApplicationRecord
   validates :status, inclusion: { in: STATUSES }
   validates :guests, numericality: { greater_than: 0 }
   validate :client_belongs_to_organization
+  validate :hotel_matches_experience
   validate :room_type_belongs_to_experience_hotel
   validate :room_belongs_to_room_type
   validate :room_type_has_availability, if: :availability_check_needed?
@@ -27,9 +28,13 @@ class Booking < ApplicationRecord
   scope :active, -> { where.not(status: "cancelled") }
   # All bookings a hotel serves — via one of its experiences or booked
   # directly against the hotel (e.g. retreat bookings without an experience).
+  # The experience is authoritative when present: bookings.hotel_id only
+  # counts for experience-less bookings, so a mismatched hotel_id can never
+  # expose a booking to another hotel's workspace.
   scope :for_hotel, ->(hotel) {
     left_joins(:experience).where(
-      "experiences.hotel_id = :hotel_id OR bookings.hotel_id = :hotel_id",
+      "experiences.hotel_id = :hotel_id OR " \
+      "(bookings.experience_id IS NULL AND bookings.hotel_id = :hotel_id)",
       hotel_id: hotel.id
     )
   }
@@ -109,6 +114,16 @@ class Booking < ApplicationRecord
     return if experience_id.present? || hotel_id.present?
 
     errors.add(:base, "must have either an experience or a hotel")
+  end
+
+  # When both are submitted they must name the same hotel — otherwise a
+  # crafted hotel_id could surface the booking in another hotel's workspace.
+  def hotel_matches_experience
+    return if experience.nil? || hotel_id.nil?
+
+    if experience.hotel_id != hotel_id
+      errors.add(:hotel, "must match the experience's hotel")
+    end
   end
 
   def room_type_belongs_to_experience_hotel
