@@ -25,6 +25,14 @@ class Booking < ApplicationRecord
   before_save :reverify_availability_under_lock, if: :availability_check_needed?
 
   scope :active, -> { where.not(status: "cancelled") }
+  # All bookings a hotel serves — via one of its experiences or booked
+  # directly against the hotel (e.g. retreat bookings without an experience).
+  scope :for_hotel, ->(hotel) {
+    left_joins(:experience).where(
+      "experiences.hotel_id = :hotel_id OR bookings.hotel_id = :hotel_id",
+      hotel_id: hotel.id
+    )
+  }
 
   def amount
     amount_cents / 100.0
