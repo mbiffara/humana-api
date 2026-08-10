@@ -70,6 +70,7 @@ Rails.application.routes.draw do
         resource :dashboard, only: [:show], controller: "dashboard"
         resource :subscription, only: %i[show create update destroy] do
           get :plans, on: :collection
+          post :verify, on: :member
         end
         resources :retreats do
           member do

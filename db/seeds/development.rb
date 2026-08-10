@@ -1959,13 +1959,13 @@ puts "  AR Bookings:    #{Booking.joins(:organization).where(organizations: { co
 puts "  jonaawtf@gmail.com / humana1234"
 
 # =============================================================================
-# Subscriptions — give all agency and hotel orgs a Starter plan
+# Subscriptions — give all agency and hotel orgs the monthly plan
 # =============================================================================
 puts ""
 puts "Seeding subscriptions for demo orgs..."
 
-agency_starter = SubscriptionPlan.find_by(name: "Starter", target_audience: "agency")
-hotel_starter  = SubscriptionPlan.find_by(name: "Hotel Starter", target_audience: "hotel")
+agency_starter = SubscriptionPlan.find_by(name: "Agency Monthly", target_audience: "agency")
+hotel_starter  = SubscriptionPlan.find_by(name: "Hotel Monthly", target_audience: "hotel")
 
 if agency_starter
   Organization.where(kind: "agency").find_each do |org|

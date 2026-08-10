@@ -96,51 +96,73 @@ countries_data.each do |attrs|
 end
 
 # --- Subscription plans ------------------------------------------------------
-plans_data = [
-  { name: "Starter", price_cents: 0, commission_rate: 0.16, trial_days: 14, position: 0,
+# Agency: $2,000/month or $15,000/year
+# Hotel:  $3,000/month or $25,000/year
+
+SubscriptionPlan.where.not(name: [
+  "Agency Monthly", "Agency Annual", "Hotel Monthly", "Hotel Annual"
+]).destroy_all
+
+agency_plans = [
+  { name: "Agency Monthly", price_cents: 200_000, billing_interval: "monthly",
+    commission_rate: 0.16, trial_days: 14, position: 0,
     target_audience: "agency",
-    features: { max_bookings: 10, max_clients: 50, support: "email", analytics: "basic" } },
-  { name: "Professional", price_cents: 9900, commission_rate: 0.16, trial_days: 14, position: 1,
+    features: { max_bookings: -1, max_clients: -1, support: "priority", analytics: "advanced" } },
+  { name: "Agency Annual", price_cents: 1_500_000, billing_interval: "yearly",
+    commission_rate: 0.16, trial_days: 14, position: 1,
     target_audience: "agency",
-    features: { max_bookings: -1, max_clients: -1, support: "priority", analytics: "advanced",
-                custom_branding: true, api_access: true } },
-  { name: "Enterprise", price_cents: 29900, commission_rate: 0.16, trial_days: 30, position: 2,
-    target_audience: "agency",
-    features: { max_bookings: -1, max_clients: -1, support: "dedicated", analytics: "full",
-                custom_branding: true, api_access: true, white_label: true, sla: "99.9%" } }
+    features: { max_bookings: -1, max_clients: -1, support: "priority", analytics: "advanced" } },
 ]
 
-plans_data.each do |attrs|
-  SubscriptionPlan.find_or_create_by!(name: attrs[:name]) do |p|
-    p.assign_attributes(attrs)
-    p.currency = "USD"
-    p.billing_interval = "monthly"
-    p.active = true
-  end
+hotel_plans = [
+  { name: "Hotel Monthly", price_cents: 300_000, billing_interval: "monthly",
+    commission_rate: 0.16, trial_days: 14, position: 0,
+    target_audience: "hotel",
+    features: { unlimited_room_types: true, retreat_creation: true, analytics: true, support: "priority" } },
+  { name: "Hotel Annual", price_cents: 2_500_000, billing_interval: "yearly",
+    commission_rate: 0.16, trial_days: 14, position: 1,
+    target_audience: "hotel",
+    features: { unlimited_room_types: true, retreat_creation: true, analytics: true, support: "priority" } },
+]
+
+(agency_plans + hotel_plans).each do |attrs|
+  plan = SubscriptionPlan.find_or_initialize_by(name: attrs[:name])
+  plan.assign_attributes(attrs)
+  plan.currency = "USD"
+  plan.active = true
+  plan.save!
 end
 
-# Hotel subscription plans
-hotel_plans_data = [
-  { name: "Hotel Starter", price_cents: 4900, commission_rate: 0.16, trial_days: 14, position: 0,
-    target_audience: "hotel",
-    features: { basic_listing: true, email_support: true, max_room_types: 5 } },
-  { name: "Hotel Professional", price_cents: 9900, commission_rate: 0.14, trial_days: 14, position: 1,
-    target_audience: "hotel",
-    features: { featured_listing: true, priority_support: true, unlimited_room_types: true,
-                retreat_creation: true, analytics: true } },
-  { name: "Hotel Enterprise", price_cents: 19900, commission_rate: 0.12, trial_days: 30, position: 2,
-    target_audience: "hotel",
-    features: { premium_listing: true, dedicated_support: true, unlimited_everything: true,
-                api_access: true, white_label: true } },
-]
+# --- Stripe Products + Prices (sandbox) ----------------------------------------
+# Auto-creates Stripe Products and Prices for any plan missing a stripe_price_id.
+# Requires STRIPE_SECRET_KEY in .env. Skips gracefully if not configured.
 
-hotel_plans_data.each do |attrs|
-  SubscriptionPlan.find_or_create_by!(name: attrs[:name]) do |p|
-    p.assign_attributes(attrs)
-    p.currency = "USD"
-    p.billing_interval = "monthly"
-    p.active = true
+if ENV["STRIPE_SECRET_KEY"].present?
+  plans_needing_stripe = SubscriptionPlan.where(stripe_price_id: [nil, ""])
+  if plans_needing_stripe.any?
+    puts "  Creating Stripe Products & Prices for #{plans_needing_stripe.count} plan(s)..."
+    plans_needing_stripe.find_each do |plan|
+      product = Stripe::Product.create(
+        name: plan.name,
+        metadata: { humana_plan_id: plan.id, target_audience: plan.target_audience }
+      )
+
+      interval = plan.billing_interval == "yearly" ? "year" : "month"
+      price = Stripe::Price.create(
+        product: product.id,
+        unit_amount: plan.price_cents,
+        currency: plan.currency.downcase,
+        recurring: { interval: interval }
+      )
+
+      plan.update!(stripe_price_id: price.id)
+      puts "    ✓ #{plan.name} → #{price.id}"
+    end
+  else
+    puts "  Stripe: all plans already have stripe_price_id"
   end
+else
+  puts "  ⚠ STRIPE_SECRET_KEY not set — skipping Stripe Product/Price creation"
 end
 
 puts "Done."
