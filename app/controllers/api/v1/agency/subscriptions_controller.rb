@@ -21,7 +21,7 @@ module Api
 
           result = service.create(
             plan,
-            success_url: "#{web_url}/agency/settings?tab=subscription&stripe=success",
+            success_url: "#{web_url}/agency/settings?tab=subscription&stripe=success&session_id={CHECKOUT_SESSION_ID}",
             cancel_url: "#{web_url}/agency/settings?tab=subscription&stripe=cancelled"
           )
 
@@ -30,6 +30,17 @@ module Api
           else
             render json: { subscription: ApiSerializers.subscription(result.subscription) }, status: :created
           end
+        end
+
+        # POST /api/v1/agency/subscription/verify
+        def verify
+          session_id = params[:session_id]
+          return render_bad_request("session_id is required") unless session_id.present?
+
+          service = SubscriptionService.new(current_organization)
+          sub = service.verify_checkout_session(session_id)
+
+          render json: { subscription: ApiSerializers.subscription(sub) }
         end
 
         # PUT /api/v1/agency/subscription

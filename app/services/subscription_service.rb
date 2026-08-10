@@ -24,7 +24,11 @@ class SubscriptionService
     raise ActiveRecord::RecordNotFound, "No active subscription" unless sub
 
     if sub.stripe_subscription_id.present?
-      Stripe::Subscription.cancel(sub.stripe_subscription_id)
+      begin
+        Stripe::Subscription.cancel(sub.stripe_subscription_id)
+      rescue Stripe::InvalidRequestError => e
+        Rails.logger.warn("Stripe cancel failed (#{e.message}), cancelling locally only")
+      end
     end
 
     sub.update!(status: "cancelled", cancelled_at: Time.current)
@@ -76,6 +80,48 @@ class SubscriptionService
     Result.new(checkout_url: url)
   end
 
+  # Verify a completed Stripe Checkout Session and create the subscription locally.
+  # Called when the user returns from Stripe Checkout (no webhook needed).
+  # Idempotent: safe to call multiple times with the same session_id.
+  def verify_checkout_session(session_id)
+    session = Stripe::Checkout::Session.retrieve(session_id)
+    raise ActiveRecord::RecordNotFound, "Session not completed" unless session.status == "complete"
+
+    plan_id = session.metadata&.plan_id
+    plan = SubscriptionPlan.find(plan_id)
+    stripe_sub_id = session.subscription
+
+    # Already activated (e.g. via webhook or concurrent call) — just return it
+    existing = @organization.subscriptions.find_by(stripe_subscription_id: stripe_sub_id)
+    return existing if existing
+
+    stripe_sub = Stripe::Subscription.retrieve(stripe_sub_id)
+
+    # Use advisory lock to prevent concurrent verify calls from racing
+    @organization.with_lock do
+      # Re-check inside lock — another request may have created it
+      existing = @organization.subscriptions.find_by(stripe_subscription_id: stripe_sub_id)
+      return existing if existing
+
+      # Cancel previous active subscriptions
+      @organization.subscriptions.where(status: %w[active trialing]).update_all(
+        status: "cancelled", cancelled_at: Time.current
+      )
+
+      sub = @organization.subscriptions.create!(
+        subscription_plan: plan,
+        status: stripe_sub.status == "trialing" ? "trialing" : "active",
+        stripe_subscription_id: stripe_sub.id,
+        stripe_customer_id: stripe_sub.customer,
+        current_period_start: Time.at(stripe_sub.current_period_start),
+        current_period_end: Time.at(stripe_sub.current_period_end),
+        trial_ends_at: stripe_sub.trial_end ? Time.at(stripe_sub.trial_end) : nil
+      )
+      SubscriptionMailer.confirmed(sub).deliver_later
+      sub
+    end
+  end
+
   private
 
   def current_subscription
@@ -95,6 +141,7 @@ class SubscriptionService
         current_period_end: 1.month.from_now
       )
     end
+    SubscriptionMailer.confirmed(sub).deliver_later
     sub
   end
 
@@ -120,7 +167,11 @@ class SubscriptionService
     # Reuse existing customer from previous subscriptions
     existing_sub = @organization.subscriptions.where.not(stripe_customer_id: [nil, ""]).order(created_at: :desc).first
     if existing_sub
-      return Stripe::Customer.retrieve(existing_sub.stripe_customer_id)
+      begin
+        return Stripe::Customer.retrieve(existing_sub.stripe_customer_id)
+      rescue Stripe::InvalidRequestError
+        # Customer no longer exists in Stripe — fall through to create a new one
+      end
     end
 
     Stripe::Customer.create(

@@ -1647,7 +1647,7 @@ ar_retreat1.save!
   end
   [
     { name: "Meditación al Amanecer", time: "07:00", duration_minutes: 45, position: 0, category: "meditation" },
-    { name: "Baño Termal Guiado", time: "09:00", duration_minutes: 90, position: 1, category: "wellness" },
+    { name: "Baño Termal Guiado", time: "09:00", duration_minutes: 90, position: 1, category: "spa" },
     { name: "Caminata de Montaña", time: "15:00", duration_minutes: 120, position: 2, category: "excursion" },
   ].each do |act|
     RetreatActivity.find_or_create_by!(retreat_day: day, name: act[:name]) do |a|
@@ -1957,3 +1957,41 @@ puts "  AR Agencies:    #{Organization.where(kind: 'agency', country_code: 'AR')
 puts "  AR Retreats:    #{Retreat.where(country_code: 'AR').count}"
 puts "  AR Bookings:    #{Booking.joins(:organization).where(organizations: { country_code: 'AR' }).count}"
 puts "  jonaawtf@gmail.com / humana1234"
+
+# =============================================================================
+# Subscriptions — give all agency and hotel orgs the monthly plan
+# =============================================================================
+puts ""
+puts "Seeding subscriptions for demo orgs..."
+
+agency_starter = SubscriptionPlan.find_by(name: "Agency Monthly", target_audience: "agency")
+hotel_starter  = SubscriptionPlan.find_by(name: "Hotel Monthly", target_audience: "hotel")
+
+if agency_starter
+  Organization.where(kind: "agency").find_each do |org|
+    next if org.subscriptions.active_or_trialing.exists?
+    Subscription.create!(
+      organization: org,
+      subscription_plan: agency_starter,
+      status: "active",
+      current_period_start: Date.current,
+      current_period_end: Date.current + 30.days
+    )
+  end
+end
+
+if hotel_starter
+  Organization.where(kind: "hotel").find_each do |org|
+    next if org.subscriptions.active_or_trialing.exists?
+    next if org.sponsored?
+    Subscription.create!(
+      organization: org,
+      subscription_plan: hotel_starter,
+      status: "active",
+      current_period_start: Date.current,
+      current_period_end: Date.current + 30.days
+    )
+  end
+end
+
+puts "  Subscriptions:  #{Subscription.count}"
