@@ -1,7 +1,7 @@
 # Full retreat program with day-by-day schedule, facilitators, inclusions,
 # per-room pricing, and gallery images. Created by hotels, agencies, or offices.
 class Retreat < ApplicationRecord
-  TYPES = %w[wellness spiritual corporate adventure medical].freeze
+  TYPES = %w[wellness spiritual liderazgo_mujeres constelaciones_familiares breathwork neurociencia kabbalah mindfulness].freeze
   STATUSES = %w[draft pending_review active upcoming closed cancelled].freeze
   CREATOR_TYPES = %w[hotel agency office].freeze
 
