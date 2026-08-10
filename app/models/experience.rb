@@ -1,5 +1,5 @@
 class Experience < ApplicationRecord
-  KINDS = %w[retreat masterclass corporate].freeze
+  KINDS = %w[wellness spiritual liderazgo_mujeres constelaciones_familiares breathwork neurociencia kabbalah mindfulness].freeze
   STATUSES = %w[draft active upcoming closed].freeze
 
   belongs_to :hotel

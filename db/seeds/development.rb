@@ -261,7 +261,7 @@ end
 aia_exp = Experience.find_or_initialize_by(slug: "transformative-yoga-retreat-ibiza")
 aia_exp.assign_attributes(
   hotel: aia_hotel,
-  kind: "retreat",
+  kind: "wellness",
   title: "Transformative Yoga Retreat — Ibiza",
   description: yoga_retreat.description,
   location: "Ibiza",
@@ -542,7 +542,7 @@ end
 sol_exp = Experience.find_or_initialize_by(slug: "mayan-spirit-retreat-tulum")
 sol_exp.assign_attributes(
   hotel: sol_hotel,
-  kind: "retreat",
+  kind: "spiritual",
   title: "Mayan Spirit Retreat — Tulum",
   description: sol_retreat.description,
   location: "Tulum",
@@ -748,7 +748,7 @@ calreiet_retreat.save!
 
 calreiet_exp = Experience.find_or_initialize_by(slug: "detox-reset-mallorca")
 calreiet_exp.assign_attributes(
-  hotel: calreiet_hotel, kind: "retreat",
+  hotel: calreiet_hotel, kind: "mindfulness",
   title: "Detox & Reset — Mallorca",
   description: calreiet_retreat.description,
   location: "Santanyí", country: "España", country_code: "ES",
@@ -838,7 +838,7 @@ sha_retreat.assign_attributes(
   name: "Longevity Program",
   hotel: sha_hotel,
   created_by_organization: sha_org,
-  retreat_type: "medical",
+  retreat_type: "neurociencia",
   status: "pending_review",
   duration_nights: 7,
   starts_on: Date.new(2026, 11, 1),
@@ -860,7 +860,7 @@ sha_retreat.save!
 
 sha_exp = Experience.find_or_initialize_by(slug: "longevity-program-sha")
 sha_exp.assign_attributes(
-  hotel: sha_hotel, kind: "retreat",
+  hotel: sha_hotel, kind: "neurociencia",
   title: "Longevity Program — SHA Wellness",
   description: sha_retreat.description,
   location: "Alicante", country: "España", country_code: "ES",
@@ -920,7 +920,7 @@ aire_retreat.assign_attributes(
   name: "Silence in the Desert",
   hotel: aire_hotel,
   created_by_organization: aire_org,
-  retreat_type: "wellness",
+  retreat_type: "breathwork",
   status: "draft",
   duration_nights: 3,
   starts_on: Date.new(2026, 12, 1),
@@ -1685,7 +1685,7 @@ ar_retreat1.save!
 
 ar_exp1 = Experience.find_or_initialize_by(slug: "retiro-termal-andino-cacheuta")
 ar_exp1.assign_attributes(
-  hotel: cacheuta_hotel, kind: "retreat",
+  hotel: cacheuta_hotel, kind: "wellness",
   title: "Retiro Termal Andino — Cacheuta",
   description: ar_retreat1.description,
   location: "Cacheuta", country: "Argentina", country_code: "AR",
@@ -1702,7 +1702,7 @@ ar_retreat2.assign_attributes(
   name: "Patagonia Wellness Experience",
   hotel: llaollao_hotel,
   created_by_organization: llaollao_org,
-  retreat_type: "wellness",
+  retreat_type: "mindfulness",
   status: "active",
   duration_nights: 7,
   starts_on: Date.new(2026, 10, 10),
@@ -1725,7 +1725,7 @@ ar_retreat2.save!
 
 ar_exp2 = Experience.find_or_initialize_by(slug: "patagonia-wellness-bariloche")
 ar_exp2.assign_attributes(
-  hotel: llaollao_hotel, kind: "retreat",
+  hotel: llaollao_hotel, kind: "breathwork",
   title: "Patagonia Wellness Experience — Bariloche",
   description: ar_retreat2.description,
   location: "Bariloche", country: "Argentina", country_code: "AR",
@@ -1765,7 +1765,7 @@ ar_retreat3.save!
 
 ar_exp3 = Experience.find_or_initialize_by(slug: "vendimia-vinotherapy-mendoza")
 ar_exp3.assign_attributes(
-  hotel: cavas_hotel, kind: "retreat",
+  hotel: cavas_hotel, kind: "mindfulness",
   title: "Vendimia & Vinotherapy — Mendoza",
   description: ar_retreat3.description,
   location: "Luján de Cuyo", country: "Argentina", country_code: "AR",
@@ -1782,7 +1782,7 @@ ar_retreat4.assign_attributes(
   name: "Silencio en la Quebrada",
   hotel: borravino_hotel,
   created_by_organization: borravino_org,
-  retreat_type: "spiritual",
+  retreat_type: "constelaciones_familiares",
   status: "draft",
   duration_nights: 3,
   starts_on: Date.new(2026, 12, 10),

@@ -73,19 +73,25 @@ end
 # --- Countries ---------------------------------------------------------------
 countries_data = [
   { name: "España", code: "ES", flag_emoji: "\u{1F1EA}\u{1F1F8}", region: "Europe", currency_code: "EUR", timezone: "Europe/Madrid" },
-  { name: "México", code: "MX", flag_emoji: "\u{1F1F2}\u{1F1FD}", region: "LATAM", currency_code: "MXN", timezone: "America/Mexico_City" },
-  { name: "Singapur", code: "SG", flag_emoji: "\u{1F1F8}\u{1F1EC}", region: "APAC", currency_code: "SGD", timezone: "Asia/Singapore" },
-  { name: "Indonesia", code: "ID", flag_emoji: "\u{1F1EE}\u{1F1E9}", region: "APAC", currency_code: "IDR", timezone: "Asia/Jakarta" },
-  { name: "Costa Rica", code: "CR", flag_emoji: "\u{1F1E8}\u{1F1F7}", region: "LATAM", currency_code: "CRC", timezone: "America/Costa_Rica" },
-  { name: "Portugal", code: "PT", flag_emoji: "\u{1F1F5}\u{1F1F9}", region: "Europe", currency_code: "EUR", timezone: "Europe/Lisbon" },
-  { name: "Tailandia", code: "TH", flag_emoji: "\u{1F1F9}\u{1F1ED}", region: "APAC", currency_code: "THB", timezone: "Asia/Bangkok" },
-  { name: "Perú", code: "PE", flag_emoji: "\u{1F1F5}\u{1F1EA}", region: "LATAM", currency_code: "PEN", timezone: "America/Lima" },
   { name: "Colombia", code: "CO", flag_emoji: "\u{1F1E8}\u{1F1F4}", region: "LATAM", currency_code: "COP", timezone: "America/Bogota" },
-  { name: "Italia", code: "IT", flag_emoji: "\u{1F1EE}\u{1F1F9}", region: "Europe", currency_code: "EUR", timezone: "Europe/Rome" },
-  { name: "Grecia", code: "GR", flag_emoji: "\u{1F1EC}\u{1F1F7}", region: "Europe", currency_code: "EUR", timezone: "Europe/Athens" },
-  { name: "India", code: "IN", flag_emoji: "\u{1F1EE}\u{1F1F3}", region: "APAC", currency_code: "INR", timezone: "Asia/Kolkata" },
-  { name: "Argentina", code: "AR", flag_emoji: "\u{1F1E6}\u{1F1F7}", region: "LATAM", currency_code: "ARS", timezone: "America/Argentina/Buenos_Aires" }
+  { name: "Ecuador", code: "EC", flag_emoji: "\u{1F1EA}\u{1F1E8}", region: "LATAM", currency_code: "USD", timezone: "America/Guayaquil" },
+  { name: "Perú", code: "PE", flag_emoji: "\u{1F1F5}\u{1F1EA}", region: "LATAM", currency_code: "PEN", timezone: "America/Lima" },
+  { name: "Brasil", code: "BR", flag_emoji: "\u{1F1E7}\u{1F1F7}", region: "LATAM", currency_code: "BRL", timezone: "America/Sao_Paulo" },
+  { name: "Paraguay", code: "PY", flag_emoji: "\u{1F1F5}\u{1F1FE}", region: "LATAM", currency_code: "PYG", timezone: "America/Asuncion" },
+  { name: "Chile", code: "CL", flag_emoji: "\u{1F1E8}\u{1F1F1}", region: "LATAM", currency_code: "CLP", timezone: "America/Santiago" },
+  { name: "Argentina", code: "AR", flag_emoji: "\u{1F1E6}\u{1F1F7}", region: "LATAM", currency_code: "ARS", timezone: "America/Argentina/Buenos_Aires" },
+  { name: "Uruguay", code: "UY", flag_emoji: "\u{1F1FA}\u{1F1FE}", region: "LATAM", currency_code: "UYU", timezone: "America/Montevideo" },
+  { name: "Costa Rica", code: "CR", flag_emoji: "\u{1F1E8}\u{1F1F7}", region: "LATAM", currency_code: "CRC", timezone: "America/Costa_Rica" },
+  { name: "El Salvador", code: "SV", flag_emoji: "\u{1F1F8}\u{1F1FB}", region: "LATAM", currency_code: "USD", timezone: "America/El_Salvador" },
+  { name: "Panamá", code: "PA", flag_emoji: "\u{1F1F5}\u{1F1E6}", region: "LATAM", currency_code: "USD", timezone: "America/Panama" },
+  { name: "República Dominicana", code: "DO", flag_emoji: "\u{1F1E9}\u{1F1F4}", region: "LATAM", currency_code: "DOP", timezone: "America/Santo_Domingo" },
+  { name: "Estados Unidos", code: "US", flag_emoji: "\u{1F1FA}\u{1F1F8}", region: "North America", currency_code: "USD", timezone: "America/New_York" },
+  { name: "México", code: "MX", flag_emoji: "\u{1F1F2}\u{1F1FD}", region: "LATAM", currency_code: "MXN", timezone: "America/Mexico_City" },
 ]
+
+# Disable countries that are no longer in the target list
+target_codes = countries_data.map { |c| c[:code] }
+Country.where.not(code: target_codes).update_all(enabled: false, status: "inactive")
 
 countries_data.each do |attrs|
   country = Country.find_or_initialize_by(code: attrs[:code])
