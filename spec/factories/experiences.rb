@@ -2,7 +2,7 @@ FactoryBot.define do
   factory :experience do
     hotel
     sequence(:title) { |n| "Wellness Experience #{n}" }
-    kind { "retreat" }
+    kind { "wellness" }
     status { "active" }
     price_cents { 100_000 }
     commission_rate { 0.16 }
