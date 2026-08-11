@@ -68,6 +68,7 @@ module Api
             id: b.id,
             reference: b.reference,
             status: b.status,
+            booking_type: b.retreat_id.present? ? "retreat" : "lodging",
             guests: b.guests,
             starts_on: b.starts_on,
             ends_on: b.ends_on,

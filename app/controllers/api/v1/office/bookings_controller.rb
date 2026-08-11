@@ -36,8 +36,11 @@ module Api
         private
 
         def serialize_office_booking(b)
+          hotel = b.hotel || b.experience&.hotel
           ApiSerializers.booking(b).merge(
+            booking_type: b.retreat_id.present? ? "retreat" : "lodging",
             agency: ApiSerializers.organization(b.organization),
+            hotel: hotel ? { id: hotel.id, name: hotel.name, city: hotel.city, country: hotel.country, country_code: hotel.country_code } : nil,
             office_fee_cents: (b.amount_cents * office_fee_rate).round,
             office_fee_rate: office_fee_rate.to_f
           )
