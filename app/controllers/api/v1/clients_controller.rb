@@ -7,9 +7,9 @@ module Api
 
       # GET /api/v1/clients
       def index
-        scope = current_organization.clients.order(:name)
+        scope = current_organization.clients.includes(:bookings).order(:name)
         render json: {
-          clients: paginate(scope).map { |c| ApiSerializers.client(c) },
+          clients: paginate(scope).map { |c| ApiSerializers.client(c, include_bookings: true) },
           meta: meta_for(scope)
         }
       end

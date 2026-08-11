@@ -27,9 +27,17 @@ class Retreat < ApplicationRecord
   validates :commission_rate, numericality: { in: 0..1 }
 
   scope :published, -> { where(status: %w[active upcoming]) }
-  scope :by_type, ->(t) { t.present? ? where(retreat_type: t) : all }
+  scope :by_type, ->(t) {
+    next all if t.blank?
+    values = Array(t).flat_map { |v| v.to_s.split(",") }.map(&:strip).reject(&:blank?)
+    values.length == 1 ? where(retreat_type: values.first) : where(retreat_type: values)
+  }
   scope :by_status, ->(s) { s.present? ? where(status: s) : all }
-  scope :in_country, ->(code) { code.present? ? where(country_code: code.upcase) : all }
+  scope :in_country, ->(code) {
+    next all if code.blank?
+    values = Array(code).flat_map { |v| v.to_s.split(",") }.map { |v| v.strip.upcase }.reject(&:blank?)
+    values.length == 1 ? where(country_code: values.first) : where(country_code: values)
+  }
   scope :featured, -> { where(featured: true) }
   scope :certified, -> { where(certified: true) }
   scope :in_enabled_country, -> { where(country_code: Country.enabled.select(:code)) }

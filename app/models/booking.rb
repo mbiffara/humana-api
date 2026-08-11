@@ -7,6 +7,7 @@ class Booking < ApplicationRecord
   belongs_to :client, optional: true
   belongs_to :room_type, optional: true # accommodation category chosen by the agency
   belongs_to :room, optional: true      # specific room assigned by the hotel
+  belongs_to :retreat, optional: true    # retreat this booking is for (agency-created retreats)
 
   validate :has_experience_or_hotel
 

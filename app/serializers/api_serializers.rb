@@ -82,10 +82,11 @@ module ApiSerializers
     }
   end
 
-  def hotel_full(hotel)
+  def hotel_full(hotel, active_room_types_only: false)
     return nil unless hotel
 
     base = hotel(hotel)
+    rts = active_room_types_only ? hotel.room_types.by_status("active").ordered : hotel.room_types.ordered
     base.merge(
       description: hotel.description,
       address: hotel.try(:address),
@@ -98,7 +99,7 @@ module ApiSerializers
       logo_url: hotel.logo_url,
       website: hotel.website,
       contact_email: hotel.contact_email,
-      room_types: hotel.room_types.ordered.map { |rt| room_type(rt, include_details: true) },
+      room_types: rts.map { |rt| room_type(rt, include_details: true) },
       amenities: hotel.hotel_amenities.order(:category, :position).map { |a|
         { id: a.id, name: a.name, category: a.category, icon: a.icon, position: a.position, featured: a.featured }
       },
@@ -139,10 +140,10 @@ module ApiSerializers
     data
   end
 
-  def client(client)
+  def client(client, include_bookings: false)
     return nil unless client
 
-    {
+    data = {
       id: client.id,
       name: client.name,
       email: client.email,
@@ -150,6 +151,15 @@ module ApiSerializers
       notes: client.notes,
       created_at: client.created_at
     }
+
+    if include_bookings
+      data[:booking_count] = client.bookings.size
+      data[:bookings] = client.bookings.order(created_at: :desc).limit(10).map { |b|
+        { id: b.id, reference: b.reference, status: b.status, created_at: b.created_at }
+      }
+    end
+
+    data
   end
 
   def booking(booking, include_experience: true)
@@ -267,6 +277,27 @@ module ApiSerializers
       ends_on: tier.ends_on,
       price_per_night_cents: tier.price_per_night_cents,
       price_per_night: tier.price_per_night
+    }
+  end
+
+  def inventory_block(block)
+    return nil unless block
+
+    {
+      id: block.id,
+      organization_id: block.organization_id,
+      hotel_id: block.hotel_id,
+      room_type_id: block.room_type_id,
+      room_type: room_type(block.room_type),
+      hotel: hotel(block.hotel),
+      total_rooms: block.total_rooms,
+      available_rooms: block.available_rooms,
+      starts_on: block.starts_on,
+      ends_on: block.ends_on,
+      cost_per_night_cents: block.cost_per_night_cents,
+      cost_per_night: block.cost_per_night,
+      currency: block.currency,
+      status: block.status
     }
   end
 
@@ -485,6 +516,31 @@ module ApiSerializers
       charges_enabled: sca.charges_enabled,
       onboarding_completed_at: sca.onboarding_completed_at,
       organization: organization(sca.organization)
+    }
+  end
+
+  # A booking on this agency's retreat, made by another agency.
+  def billing_sale(b)
+    return nil unless b
+
+    {
+      id: b.id,
+      reference: b.reference,
+      status: b.status,
+      guests: b.guests,
+      starts_on: b.starts_on,
+      ends_on: b.ends_on,
+      amount_cents: b.amount_cents,
+      amount: b.amount,
+      currency: b.currency,
+      commission_cents: b.commission_cents,
+      commission: b.commission,
+      retreat_name: b.retreat&.name,
+      buying_agency: b.organization&.name,
+      client_name: b.client&.name,
+      room_type: room_type(b.room_type),
+      hotel_name: b.hotel&.name || b.experience&.hotel&.name,
+      created_at: b.created_at
     }
   end
 end

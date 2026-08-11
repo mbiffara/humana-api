@@ -7,9 +7,12 @@ module Api
         scope = Experience.published
                           .includes(:hotel)
                           .by_kind(params[:kind])
-                          .in_country(params[:country])
+                          .in_country(params[:country_code].presence || params[:country])
+                          .available_between(params[:from], params[:to])
+                          .min_capacity(params[:guests])
                           .search(params[:q])
                           .order(:starts_on)
+        scope = scope.where(hotel_id: params[:hotel_id]) if params[:hotel_id].present?
 
         render json: {
           experiences: paginate(scope).map { |e| ApiSerializers.experience(e) },

@@ -1,0 +1,29 @@
+HUMANA Global
+===========================
+
+<%= @t[:title] %>
+
+<%= @greeting %>
+
+<%= @t[:body] %>
+
+<%= @t[:reference_label] %>: <%= @reference %>
+<%= @t[:agency_label] %>: <%= @agency_name %>
+<% if @experience_title %><%= @t[:experience_label] %>: <%= @experience_title %>
+<% end %><% if @room_name %><%= @t[:room_label] %>: <%= @room_name %>
+<% end %><%= @t[:dates_label] %>: <%= @dates %>
+<% if @nights > 0 %><%= @t[:nights_label] %>: <%= @nights %>
+<% end %><%= @t[:guests_label] %>: <%= @guests %>
+<%= @t[:total_label] %>: <%= @total %>
+<%= @t[:net_label] %>: <%= @net %>
+
+<%= @t[:contact_label] %>:
+<%= @agency_name %>
+<%= @agency_email %>
+<% if @agency_phone %><%= @agency_phone %><% end %>
+
+---
+<%= @t[:footer_line] %> <%= @recipient_email %>.
+<%= @t[:footer_auto] %>
+
+<%= @t[:footer_brand] %>

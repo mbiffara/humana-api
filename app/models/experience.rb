@@ -15,9 +15,25 @@ class Experience < ApplicationRecord
   validates :commission_rate, numericality: { in: 0..1 }
 
   scope :published, -> { where(status: %w[active upcoming]) }
-  scope :by_kind, ->(kind) { kind.present? ? where(kind: kind) : all }
-  scope :in_country, ->(code) { code.present? ? where(country_code: code.upcase) : all }
+  scope :by_kind, ->(kind) {
+    next all if kind.blank?
+    values = Array(kind).flat_map { |v| v.to_s.split(",") }.map(&:strip).reject(&:blank?)
+    values.length == 1 ? where(kind: values.first) : where(kind: values)
+  }
+  scope :in_country, ->(code) {
+    next all if code.blank?
+    values = Array(code).flat_map { |v| v.to_s.split(",") }.map { |v| v.strip.upcase }.reject(&:blank?)
+    values.length == 1 ? where(country_code: values.first) : where(country_code: values)
+  }
   scope :in_enabled_country, -> { where(country_code: Country.enabled.select(:code)) }
+  scope :available_between, ->(from, to) {
+    next all if from.blank? || to.blank?
+    where("starts_on <= ? AND ends_on >= ?", to, from)
+  }
+  scope :min_capacity, ->(guests) {
+    next all if guests.blank?
+    where("capacity IS NULL OR capacity >= ?", guests.to_i)
+  }
   scope :search, ->(q) {
     next all if q.blank?
 
