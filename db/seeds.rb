@@ -323,40 +323,26 @@ client3 = Client.find_or_create_by!(organization: agency_org, email: "diego@exam
 end
 
 # --- Inventory blocks (agency allotments at SHA hotel) -----------------------
-# These represent room allotments the agency has negotiated with the hotel.
-# Broad date range so any retreat date the user picks will find availability.
+# Create room allotments for ALL agency organizations so every agency user
+# has inventory available when testing the retreat creation wizard.
 
-InventoryBlock.find_or_initialize_by(organization: agency_org, hotel: sha_hotel, room_type: suite).tap do |ib|
-  ib.total_rooms = 5
-  ib.starts_on = Date.today
-  ib.ends_on = 6.months.from_now.to_date
-  ib.cost_per_night_cents = 65_000
-  ib.currency = "USD"
-  ib.status = "active"
-  ib.save!
+room_costs = { suite => 65_000, deluxe => 42_000, superior => 28_000 }
+room_allotments = { suite => 5, deluxe => 8, superior => 10 }
+
+Organization.where(kind: "agency").find_each do |agency|
+  [suite, deluxe, superior].each do |rt|
+    InventoryBlock.find_or_initialize_by(organization: agency, hotel: sha_hotel, room_type: rt).tap do |ib|
+      ib.total_rooms = room_allotments[rt]
+      ib.starts_on = Date.today
+      ib.ends_on = 6.months.from_now.to_date
+      ib.cost_per_night_cents = room_costs[rt]
+      ib.currency = "USD"
+      ib.status = "active"
+      ib.save!
+    end
+  end
+  puts "  ✓ Inventory blocks (3 room types at SHA for #{agency.name})"
 end
-
-InventoryBlock.find_or_initialize_by(organization: agency_org, hotel: sha_hotel, room_type: deluxe).tap do |ib|
-  ib.total_rooms = 8
-  ib.starts_on = Date.today
-  ib.ends_on = 6.months.from_now.to_date
-  ib.cost_per_night_cents = 42_000
-  ib.currency = "USD"
-  ib.status = "active"
-  ib.save!
-end
-
-InventoryBlock.find_or_initialize_by(organization: agency_org, hotel: sha_hotel, room_type: superior).tap do |ib|
-  ib.total_rooms = 10
-  ib.starts_on = Date.today
-  ib.ends_on = 6.months.from_now.to_date
-  ib.cost_per_night_cents = 28_000
-  ib.currency = "USD"
-  ib.status = "active"
-  ib.save!
-end
-
-puts "  ✓ Inventory blocks (3 room types at SHA for Viajes Éter)"
 
 # --- Agency-created retreat at SHA hotel -------------------------------------
 # This is the key scenario: Viajes Éter created a retreat using SHA as venue.

@@ -1,55 +1,57 @@
-# Agency-scoped inventory block management. Tracks room allotments
-# at partner hotels, with computed availability.
+# Agency inventory derived from real bookings.
+# Groups the agency's lodging bookings by hotel + room_type and computes
+# availability: bookings without a client assigned are "available rooms".
 module Api
   module V1
     module Agency
       class InventoryBlocksController < BaseController
         def index
-          scope = InventoryBlock.where(organization: current_organization).active
-          scope = scope.for_hotel(params[:hotel_id]) if params[:hotel_id].present?
+          scope = ::Booking.where(organization: current_organization)
+                           .where.not(status: "cancelled")
+                           .where.not(hotel_id: nil)      # only direct hotel bookings
+                           .where.not(room_type_id: nil)   # must have a room type
+
+          scope = scope.where(hotel_id: params[:hotel_id]) if params[:hotel_id].present?
+
           if params[:from].present? && params[:to].present?
-            scope = scope.covering_dates(params[:from], params[:to])
+            # Overlap: booking dates intersect the requested range
+            scope = scope.where("starts_on <= ? AND ends_on >= ?", params[:to], params[:from])
           end
 
-          blocks = scope.includes(:room_type, :hotel).order(:starts_on)
-          render json: {
-            inventory_blocks: blocks.map { |b| ApiSerializers.inventory_block(b) }
-          }
-        end
+          bookings = scope.includes(:room_type, :hotel).to_a
 
-        def create
-          block = InventoryBlock.new(block_params)
-          block.organization = current_organization
-
-          if block.save
-            render json: { inventory_block: ApiSerializers.inventory_block(block) }, status: :created
-          else
-            render_unprocessable(block.errors.full_messages)
+          # Group by hotel + room_type
+          grouped = {}
+          bookings.each do |b|
+            key = [b.hotel_id, b.room_type_id]
+            (grouped[key] ||= []) << b
           end
-        end
 
-        def update
-          block = InventoryBlock.where(organization: current_organization).find(params[:id])
-          if block.update(block_params)
-            render json: { inventory_block: ApiSerializers.inventory_block(block) }
-          else
-            render_unprocessable(block.errors.full_messages)
+          result = grouped.map do |(hotel_id, room_type_id), group|
+            hotel = group.first.hotel
+            rt    = group.first.room_type
+            total     = group.size
+            available = group.count { |b| b.client_id.nil? }
+
+            {
+              id: room_type_id,
+              organization_id: current_organization.id,
+              hotel_id: hotel_id,
+              room_type_id: room_type_id,
+              room_type: ApiSerializers.room_type(rt),
+              hotel: ApiSerializers.hotel(hotel),
+              total_rooms: total,
+              available_rooms: available,
+              starts_on: group.map(&:starts_on).min,
+              ends_on: group.map(&:ends_on).max,
+              cost_per_night_cents: rt.price_per_night_cents,
+              cost_per_night: rt.price_per_night_cents / 100.0,
+              currency: rt.currency || "USD",
+              status: "active"
+            }
           end
-        end
 
-        def destroy
-          block = InventoryBlock.where(organization: current_organization).find(params[:id])
-          block.destroy!
-          head :no_content
-        end
-
-        private
-
-        def block_params
-          params.require(:inventory_block).permit(
-            :hotel_id, :room_type_id, :total_rooms,
-            :starts_on, :ends_on, :cost_per_night_cents, :currency, :status
-          )
+          render json: { inventory_blocks: result }
         end
       end
     end

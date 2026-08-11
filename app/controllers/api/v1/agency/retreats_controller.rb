@@ -21,7 +21,7 @@ module Api
         end
 
         def create
-          hotel = Hotel.find(params[:retreat][:hotel_id])
+          hotel = ::Hotel.find(params[:retreat][:hotel_id])
           retreat = hotel.retreats.build(retreat_params)
           retreat.created_by_organization = current_organization
           retreat.created_by_type = "agency"
