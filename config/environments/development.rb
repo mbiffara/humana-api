@@ -29,12 +29,15 @@ Rails.application.configure do
   # Change to :null_store to avoid any caching.
   config.cache_store = :memory_store
 
-  # Deliver via Resend when API key is present, otherwise log to console.
-  if ENV["RESEND_API_KEY"].present?
+  # Email delivery in development:
+  # - Set RESEND_ENABLED=1 to send real emails via Resend (requires verified domain)
+  # - Otherwise, emails are saved to tmp/mails/ for inspection
+  if ENV["RESEND_ENABLED"].present? && ENV["RESEND_API_KEY"].present?
     config.action_mailer.delivery_method = :resend
     config.action_mailer.raise_delivery_errors = true
   else
-    config.action_mailer.delivery_method = :letter_opener_web
+    config.action_mailer.delivery_method = :file
+    config.action_mailer.file_settings = { location: Rails.root.join("tmp/mails") }
     config.action_mailer.raise_delivery_errors = false
   end
 

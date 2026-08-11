@@ -72,10 +72,16 @@ Rails.application.routes.draw do
           get :plans, on: :collection
           post :verify, on: :member
         end
+        resources :billing, only: [:index]
+        resources :inventory_blocks, only: %i[index create update destroy]
         resources :retreats do
           member do
             post :submit_for_review
             put "program" => "retreats#replace_program"
+            put "pricings" => "retreats#replace_pricings"
+          end
+          resources :images, controller: "retreat_images", except: [:show] do
+            collection { post :batch }
           end
         end
       end
@@ -156,7 +162,11 @@ Rails.application.routes.draw do
 
       # Agency workspace
       resources :clients
-      resources :bookings, only: %i[index show create update]
+      resources :bookings, only: %i[index show create update] do
+        member do
+          post :verify_checkout
+        end
+      end
     end
   end
 

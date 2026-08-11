@@ -5,7 +5,7 @@ module Api
   module V1
     module Agency
       class RetreatsController < BaseController
-        before_action :set_retreat, only: %i[show update destroy submit_for_review replace_program]
+        before_action :set_retreat, only: %i[show update destroy submit_for_review replace_program replace_pricings]
 
         def index
           scope = Retreat.where(created_by_organization: current_organization)
@@ -57,6 +57,20 @@ module Api
           else
             render json: { error: "Only draft retreats can be submitted for review" }, status: :unprocessable_entity
           end
+        end
+
+        def replace_pricings
+          ActiveRecord::Base.transaction do
+            @retreat.retreat_pricings.destroy_all
+            (params[:pricings] || []).each do |pricing_params|
+              @retreat.retreat_pricings.create!(
+                room_type_id: pricing_params[:room_type_id],
+                price_per_guest_cents: pricing_params[:price_per_guest_cents]
+              )
+            end
+          end
+
+          render json: { retreat: ApiSerializers.retreat(@retreat.reload, all_pricing: true) }
         end
 
         def replace_program

@@ -32,6 +32,17 @@ module Api
                                 Arel.sql("AVG(hotels.longitude)")
                               )
 
+        # Hotels per country — use same scope as public hotels endpoint
+        hotel_data = ::Hotel.in_enabled_country
+                          .where.not(country_code: [nil, ""])
+                          .group(:country_code)
+                          .pluck(
+                            :country_code,
+                            Arel.sql("COUNT(*)"),
+                            Arel.sql("AVG(latitude)"),
+                            Arel.sql("AVG(longitude)")
+                          )
+
         by_code = {}
         (rows + retreat_rows).each do |code, country, total, active, lat, lng|
           marker = by_code[code] ||= {
@@ -40,12 +51,30 @@ module Api
             experiences: 0,
             active: 0,
             upcoming: 0,
+            hotels: 0,
             latitude: lat&.to_f,
             longitude: lng&.to_f
           }
           marker[:experiences] += total.to_i
           marker[:active] += active.to_i
           marker[:upcoming] = marker[:experiences] - marker[:active]
+          marker[:latitude] ||= lat&.to_f
+          marker[:longitude] ||= lng&.to_f
+        end
+
+        # Merge hotel counts + coordinates (may include countries with hotels but no experiences)
+        hotel_data.each do |code, count, lat, lng|
+          marker = by_code[code] ||= {
+            country_code: code,
+            country: code,
+            experiences: 0,
+            active: 0,
+            upcoming: 0,
+            hotels: 0,
+            latitude: lat&.to_f,
+            longitude: lng&.to_f
+          }
+          marker[:hotels] = count
           marker[:latitude] ||= lat&.to_f
           marker[:longitude] ||= lng&.to_f
         end

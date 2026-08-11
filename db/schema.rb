@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2026_08_10_000000) do
+ActiveRecord::Schema[8.0].define(version: 2026_08_11_100000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -74,11 +74,13 @@ ActiveRecord::Schema[8.0].define(version: 2026_08_10_000000) do
     t.bigint "room_type_id"
     t.bigint "room_id"
     t.bigint "hotel_id"
+    t.bigint "retreat_id"
     t.index ["client_id"], name: "index_bookings_on_client_id"
     t.index ["experience_id"], name: "index_bookings_on_experience_id"
     t.index ["hotel_id"], name: "index_bookings_on_hotel_id"
     t.index ["organization_id"], name: "index_bookings_on_organization_id"
     t.index ["reference"], name: "index_bookings_on_reference", unique: true
+    t.index ["retreat_id"], name: "index_bookings_on_retreat_id"
     t.index ["room_id"], name: "index_bookings_on_room_id"
     t.index ["room_type_id"], name: "index_bookings_on_room_type_id"
     t.index ["status"], name: "index_bookings_on_status"
@@ -194,6 +196,24 @@ ActiveRecord::Schema[8.0].define(version: 2026_08_10_000000) do
     t.datetime "onboarding_completed_at"
     t.index ["country_code"], name: "index_hotels_on_country_code"
     t.index ["organization_id"], name: "index_hotels_on_organization_id"
+  end
+
+  create_table "inventory_blocks", force: :cascade do |t|
+    t.bigint "organization_id", null: false
+    t.bigint "hotel_id", null: false
+    t.bigint "room_type_id", null: false
+    t.integer "total_rooms", null: false
+    t.date "starts_on", null: false
+    t.date "ends_on", null: false
+    t.integer "cost_per_night_cents", null: false
+    t.string "currency", default: "USD", null: false
+    t.string "status", default: "active", null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["hotel_id"], name: "index_inventory_blocks_on_hotel_id"
+    t.index ["organization_id", "hotel_id", "room_type_id"], name: "idx_inv_blocks_org_hotel_rt"
+    t.index ["organization_id"], name: "index_inventory_blocks_on_organization_id"
+    t.index ["room_type_id"], name: "index_inventory_blocks_on_room_type_id"
   end
 
   create_table "invitations", force: :cascade do |t|
@@ -529,6 +549,7 @@ ActiveRecord::Schema[8.0].define(version: 2026_08_10_000000) do
   add_foreign_key "bookings", "experiences"
   add_foreign_key "bookings", "hotels", on_delete: :nullify
   add_foreign_key "bookings", "organizations"
+  add_foreign_key "bookings", "retreats"
   add_foreign_key "bookings", "room_types"
   add_foreign_key "bookings", "rooms"
   add_foreign_key "clients", "organizations"
@@ -536,6 +557,9 @@ ActiveRecord::Schema[8.0].define(version: 2026_08_10_000000) do
   add_foreign_key "hotel_amenities", "hotels"
   add_foreign_key "hotel_images", "hotels"
   add_foreign_key "hotels", "organizations"
+  add_foreign_key "inventory_blocks", "hotels"
+  add_foreign_key "inventory_blocks", "organizations"
+  add_foreign_key "inventory_blocks", "room_types"
   add_foreign_key "invitations", "organizations"
   add_foreign_key "invitations", "users", column: "invited_by_id"
   add_foreign_key "organizations", "organizations", column: "assigned_office_id"
