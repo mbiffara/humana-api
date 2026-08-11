@@ -183,8 +183,14 @@ module ApiSerializers
       room: room(booking.room),
       created_at: booking.created_at
     }
-    data[:experience] = experience(booking.experience) if include_experience
-    data[:hotel] = hotel(booking.hotel) if booking.hotel_id && !booking.experience_id
+    if include_experience && booking.experience
+      data[:experience] = experience(booking.experience)
+      data[:experience][:hotel][:has_active_retreats] = booking.experience.hotel.retreats.exists? if data[:experience][:hotel]
+    end
+    if booking.hotel_id && !booking.experience_id
+      data[:hotel] = hotel(booking.hotel)
+      data[:hotel][:has_active_retreats] = booking.hotel.retreats.exists?
+    end
     data
   end
 
@@ -361,6 +367,7 @@ module ApiSerializers
       certified: r.certified,
       published_at: r.published_at,
       created_by_type: r.created_by_type,
+      created_by_organization_id: r.created_by_organization_id,
       hotel: hotel(r.hotel),
       created_at: r.created_at
     }

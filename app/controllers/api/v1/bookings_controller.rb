@@ -13,6 +13,14 @@ module Api
                                     .order(created_at: :desc)
         scope = scope.where(status: params[:status]) if params[:status].present?
         scope = scope.where(client_id: params[:client_id]) if params[:client_id].present?
+        if params[:hotel_id].present?
+          scope = scope.where(
+            "(bookings.experience_id IS NOT NULL AND EXISTS (" \
+            "  SELECT 1 FROM experiences WHERE experiences.id = bookings.experience_id AND experiences.hotel_id = :hid" \
+            ")) OR (bookings.experience_id IS NULL AND bookings.hotel_id = :hid)",
+            hid: params[:hotel_id]
+          )
+        end
 
         render json: {
           bookings: paginate(scope).map { |b| ApiSerializers.booking(b) },
