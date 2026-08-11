@@ -52,10 +52,10 @@ module Api
 
         def submit_for_review
           if @retreat.status == "draft"
-            @retreat.update!(status: "pending_review")
+            @retreat.update!(status: "active", published_at: Time.current)
             render json: { retreat: ApiSerializers.retreat(@retreat, include_details: false) }
           else
-            render json: { error: "Only draft retreats can be submitted for review" }, status: :unprocessable_entity
+            render json: { error: "Only draft retreats can be published" }, status: :unprocessable_entity
           end
         end
 

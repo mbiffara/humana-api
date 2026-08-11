@@ -14,6 +14,7 @@ class Booking < ApplicationRecord
   before_validation :assign_reference, on: :create
   before_validation :snapshot_dates, on: :create
   before_validation :infer_room_type_from_room
+  before_validation :default_guests_from_room_type, on: :create
   before_validation :compute_amounts
 
   validates :reference, presence: true, uniqueness: true
@@ -109,6 +110,15 @@ class Booking < ApplicationRecord
 
   def infer_room_type_from_room
     self.room_type ||= room&.room_type
+  end
+
+  # Default guests to room type capacity when not explicitly set (i.e. still
+  # at the DB default of 1). A couple room (capacity 2) should create a
+  # booking for 2 guests automatically.
+  def default_guests_from_room_type
+    return unless room_type && guests == 1 && room_type.capacity > 1
+
+    self.guests = room_type.capacity
   end
 
   def has_experience_or_hotel
