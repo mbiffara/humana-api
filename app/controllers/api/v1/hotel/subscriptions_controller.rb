@@ -32,6 +32,8 @@ module Api
           else
             render json: { subscription: ApiSerializers.subscription(result.subscription) }, status: :created
           end
+        rescue Stripe::StripeError => e
+          render json: { error: e.message }, status: :unprocessable_entity
         end
 
         # PUT /api/v1/hotel/subscription

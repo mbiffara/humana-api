@@ -146,6 +146,7 @@ class SubscriptionService
   end
 
   def create_checkout_session(plan, success_url:, cancel_url:)
+    ensure_stripe_price!(plan)
     customer = find_or_create_stripe_customer
 
     session = Stripe::Checkout::Session.create(
@@ -161,6 +162,27 @@ class SubscriptionService
     )
 
     session.url
+  end
+
+  # Auto-create Stripe Product + Price if the plan is missing a stripe_price_id.
+  # This handles cases where seeds ran before STRIPE_SECRET_KEY was configured.
+  def ensure_stripe_price!(plan)
+    return if plan.stripe_price_id.present?
+
+    product = Stripe::Product.create(
+      name: plan.name,
+      metadata: { humana_plan_id: plan.id, target_audience: plan.target_audience }
+    )
+
+    interval = plan.billing_interval == "yearly" ? "year" : "month"
+    price = Stripe::Price.create(
+      product: product.id,
+      unit_amount: plan.price_cents,
+      currency: plan.currency.downcase,
+      recurring: { interval: interval }
+    )
+
+    plan.update!(stripe_price_id: price.id)
   end
 
   def find_or_create_stripe_customer
