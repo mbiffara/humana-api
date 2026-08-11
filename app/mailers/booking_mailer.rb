@@ -269,7 +269,7 @@ class BookingMailer < ApplicationMailer
 
     mail(
       to: @recipient_email,
-      subject: "\uD83D\uDCCB #{@t[:subject]} \u2014 #{@reference}",
+      subject: "\u{1F4CB} #{@t[:subject]} \u2014 #{@reference}",
     )
   end
 
@@ -311,7 +311,7 @@ class BookingMailer < ApplicationMailer
 
     mail(
       to: @recipient_email,
-      subject: "\uD83D\uDCE9 #{@t[:subject]} \u2014 #{@reference}",
+      subject: "\u{1F4E9} #{@t[:subject]} \u2014 #{@reference}",
     )
   end
 
