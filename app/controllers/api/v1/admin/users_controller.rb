@@ -215,15 +215,19 @@ module Api
 
         # DELETE /api/v1/admin/users/:id
         # Permanently deletes the user, their invitation, and the org if it becomes empty.
+        # Wrapped in a transaction so partial deletes never occur.
         def destroy
-          org = @user.organization
-          Invitation.where(email: @user.email).destroy_all
-          Invitation.where(invited_by_id: @user.id).update_all(invited_by_id: current_user.id)
-          @user.destroy!
+          ActiveRecord::Base.transaction do
+            org = @user.organization
 
-          # Clean up orphaned organization (if last user and not the admin org)
-          if org && !org.admin? && org.users.count == 0
-            org.destroy!
+            Invitation.where(email: @user.email).destroy_all
+            Invitation.where(invited_by_id: @user.id).update_all(invited_by_id: current_user.id)
+            @user.destroy!
+
+            # Clean up orphaned organization (if last user and not the admin org)
+            if org && !org.admin? && org.users.reload.count == 0
+              purge_organization!(org)
+            end
           end
 
           head :no_content
@@ -233,6 +237,71 @@ module Api
 
         def set_user
           @user = User.find(params[:id])
+        end
+
+        # Safely destroy an organization and all its dependent data.
+        # Rails' dependent: :destroy cascade fails because FK constraints
+        # (RESTRICT) block deletion when records in other orgs reference
+        # this org's hotels/experiences/retreats/room_types/rooms.
+        # This method deletes everything in FK-safe order (leaves first).
+        def purge_organization!(org)
+          hotel_ids = Hotel.where(organization_id: org.id).pluck(:id)
+
+          if hotel_ids.any?
+            experience_ids = Experience.where(hotel_id: hotel_ids).pluck(:id)
+            retreat_ids = Retreat.where(hotel_id: hotel_ids).pluck(:id)
+            room_type_ids = RoomType.where(hotel_id: hotel_ids).pluck(:id)
+            room_ids = Room.where(hotel_id: hotel_ids).pluck(:id)
+            retreat_day_ids = retreat_ids.any? ? RetreatDay.where(retreat_id: retreat_ids).pluck(:id) : []
+
+            # Nullify external booking references (from other orgs)
+            Booking.where(experience_id: experience_ids).update_all(experience_id: nil) if experience_ids.any?
+            Booking.where(retreat_id: retreat_ids).update_all(retreat_id: nil) if retreat_ids.any?
+            Booking.where(room_type_id: room_type_ids).update_all(room_type_id: nil) if room_type_ids.any?
+            Booking.where(room_id: room_ids).update_all(room_id: nil) if room_ids.any?
+            # bookings.hotel_id has on_delete: :nullify at DB level, handled automatically
+
+            # Retreat children (leaves first)
+            RetreatActivity.where(retreat_day_id: retreat_day_ids).delete_all if retreat_day_ids.any?
+            RetreatDay.where(retreat_id: retreat_ids).delete_all if retreat_ids.any?
+            RetreatFacilitator.where(retreat_id: retreat_ids).delete_all if retreat_ids.any?
+            RetreatInclusion.where(retreat_id: retreat_ids).delete_all if retreat_ids.any?
+            RetreatPricing.where(retreat_id: retreat_ids).delete_all if retreat_ids.any?
+            RetreatImage.where(retreat_id: retreat_ids).delete_all if retreat_ids.any?
+            Retreat.where(id: retreat_ids).delete_all if retreat_ids.any?
+
+            # Room and inventory children
+            InventoryBlock.where(hotel_id: hotel_ids).delete_all
+            AvailabilityBlock.where(hotel_id: hotel_ids).delete_all
+            RoomImage.where(room_type_id: room_type_ids).delete_all if room_type_ids.any?
+            RoomRateTier.where(room_type_id: room_type_ids).delete_all if room_type_ids.any?
+            Room.where(id: room_ids).delete_all if room_ids.any?
+            RoomType.where(id: room_type_ids).delete_all if room_type_ids.any?
+
+            # Experiences and hotel assets
+            Experience.where(hotel_id: hotel_ids).delete_all
+            HotelAmenity.where(hotel_id: hotel_ids).delete_all
+            HotelImage.where(hotel_id: hotel_ids).delete_all
+            Hotel.where(id: hotel_ids).delete_all
+          end
+
+          # Reassign retreats created by this org at other hotels
+          Retreat.where(created_by_organization_id: org.id).find_each do |retreat|
+            retreat.update_columns(created_by_organization_id: retreat.hotel_id ? Hotel.find(retreat.hotel_id).organization_id : nil, created_by_type: "hotel")
+          end
+
+          # Org's own data (bookings before clients for FK safety)
+          Booking.where(organization_id: org.id).delete_all
+          Client.where(organization_id: org.id).delete_all
+          InventoryBlock.where(organization_id: org.id).delete_all
+          Invitation.where(organization_id: org.id).delete_all
+          Subscription.where(organization_id: org.id).delete_all
+          StripeConnectAccount.where(organization_id: org.id).delete_all
+
+          # Nullify references from other orgs pointing to this one
+          Organization.where(assigned_office_id: org.id).update_all(assigned_office_id: nil)
+
+          org.delete
         end
 
         def serialize_invitation(inv)
