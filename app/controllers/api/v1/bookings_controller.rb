@@ -9,6 +9,7 @@ module Api
       # GET /api/v1/bookings?status=confirmed
       def index
         scope = current_organization.bookings
+                                    .where.not(status: "pending_payment")
                                     .includes(:hotel, :client, :room_type, :room, experience: :hotel)
                                     .order(created_at: :desc)
         scope = scope.where(status: params[:status]) if params[:status].present?
@@ -37,6 +38,7 @@ module Api
       # POST /api/v1/bookings
       def create
         booking = current_organization.bookings.new(booking_params)
+        booking.status = "pending_payment"
         booking.save!
 
         checkout_url = create_checkout_session(booking)
