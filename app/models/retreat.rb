@@ -8,6 +8,7 @@ class Retreat < ApplicationRecord
   belongs_to :hotel
   belongs_to :created_by_organization, class_name: "Organization"
 
+  has_many :bookings
   has_many :retreat_days, dependent: :destroy
   has_many :retreat_activities, through: :retreat_days
   has_many :retreat_facilitators, dependent: :destroy
@@ -57,6 +58,12 @@ class Retreat < ApplicationRecord
 
   def cover_image
     retreat_images.find_by(is_cover: true) || retreat_images.order(:position).first
+  end
+
+  def spots_available
+    return capacity unless capacity.to_i > 0
+    booked = bookings.where(status: %w[inquiry confirmed]).sum(:guests)
+    [capacity - booked, 0].max
   end
 
   def publish!
