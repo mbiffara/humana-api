@@ -191,6 +191,17 @@ module ApiSerializers
       data[:hotel] = hotel(booking.hotel)
       data[:hotel][:has_active_retreats] = booking.hotel.retreats.exists?
     end
+    if booking.retreat_id && booking.retreat
+      data[:retreat] = {
+        id: booking.retreat.id,
+        name: booking.retreat.name,
+        slug: booking.retreat.slug,
+        retreat_type: booking.retreat.retreat_type,
+        duration_nights: booking.retreat.duration_nights,
+        starts_on: booking.retreat.starts_on,
+        ends_on: booking.retreat.ends_on,
+      }
+    end
     data
   end
 

@@ -10,7 +10,7 @@ module Api
       def index
         scope = current_organization.bookings
                                     .where.not(status: "pending_payment")
-                                    .includes(:hotel, :client, :room_type, :room, experience: :hotel)
+                                    .includes(:hotel, :client, :room_type, :room, :retreat, experience: :hotel)
                                     .order(created_at: :desc)
         scope = scope.where(status: params[:status]) if params[:status].present?
         scope = scope.where(client_id: params[:client_id]) if params[:client_id].present?
@@ -90,7 +90,7 @@ module Api
       private
 
       def set_booking
-        @booking = current_organization.bookings.includes(:hotel, :client, :room_type, :room, experience: :hotel).find(params[:id])
+        @booking = current_organization.bookings.includes(:hotel, :client, :room_type, :room, :retreat, experience: :hotel).find(params[:id])
       end
 
       def booking_params
@@ -104,11 +104,13 @@ module Api
       # Commission and volume totals for the agency's commissions view.
       def summary(scope)
         active = scope.active
+        retreat_scope = scope.where("experience_id IS NOT NULL OR retreat_id IS NOT NULL")
+        lodging_scope = scope.where(experience_id: nil, retreat_id: nil)
         {
           total: scope.count,
           confirmed: scope.where(status: "confirmed").count,
-          retreat_count: scope.where.not(experience_id: nil).count,
-          lodging_count: scope.where(experience_id: nil).count,
+          retreat_count: retreat_scope.count,
+          lodging_count: lodging_scope.count,
           commission_cents: active.sum(:commission_cents),
           volume_cents: active.sum(:amount_cents)
         }
@@ -116,7 +118,7 @@ module Api
 
       def create_checkout_session(booking)
         customer = find_or_create_stripe_customer
-        description = booking.experience&.title || booking.hotel&.name || "Booking"
+        description = booking.experience&.title || booking.retreat&.name || booking.hotel&.name || "Booking"
 
         session = Stripe::Checkout::Session.create(
           customer: customer.id,
