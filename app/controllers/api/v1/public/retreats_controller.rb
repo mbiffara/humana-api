@@ -6,6 +6,7 @@ module Api
           scope = Retreat.published.includes(:hotel, :retreat_images)
           scope = scope.by_type(params[:type]) if params[:type].present?
           scope = scope.in_country(params[:country_code]) if params[:country_code].present?
+          scope = scope.where(hotel_id: params[:hotel_id]) if params[:hotel_id].present?
           scope = scope.search(params[:q]) if params[:q].present?
           scope = scope.order(starts_on: :asc)
 
