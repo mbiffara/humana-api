@@ -71,8 +71,18 @@ RSpec.describe "Hotel Retreats API", type: :request do
       expect(retreat.published_at).to be_present
     end
 
-    it "rejects publishing an already active retreat" do
-      retreat = create_retreat(status: "active", published_at: Time.current)
+    it "re-publishes an already active retreat" do
+      retreat = create_retreat(status: "active", published_at: 1.day.ago)
+
+      post "/api/v1/hotel/retreats/#{retreat.id}/publish", headers: auth_headers(owner)
+
+      expect(response).to have_http_status(:ok)
+      expect(retreat.reload.status).to eq("active")
+      expect(retreat.published_at).to be > 1.minute.ago
+    end
+
+    it "rejects publishing a closed retreat" do
+      retreat = create_retreat(status: "closed")
 
       post "/api/v1/hotel/retreats/#{retreat.id}/publish", headers: auth_headers(owner)
 

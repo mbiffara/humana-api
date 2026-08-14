@@ -102,14 +102,18 @@ module Api
           render json: { retreat: ApiSerializers.retreat(retreat.reload) }
         end
 
-        # Publish a retreat directly, making it visible on the platform
+        # Publish a retreat directly, making it visible on the platform.
+        # Also handles re-publishing an already-active retreat after edits.
         def publish
           retreat = current_hotel.retreats.find(params[:id])
-          if %w[draft pending_review].include?(retreat.status)
-            retreat.publish!
-            render json: { retreat: ApiSerializers.retreat(retreat, all_pricing: true) }
+          unless %w[draft pending_review active].include?(retreat.status)
+            return render json: { error: "Only draft or active retreats can be published" }, status: :unprocessable_entity
+          end
+
+          if retreat.update(status: "active", published_at: Time.current)
+            render json: { retreat: ApiSerializers.retreat(retreat.reload, all_pricing: true) }
           else
-            render json: { error: "Only draft retreats can be published" }, status: :unprocessable_entity
+            render_unprocessable(retreat.errors.full_messages)
           end
         end
 
