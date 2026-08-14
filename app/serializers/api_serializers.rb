@@ -353,6 +353,7 @@ module ApiSerializers
       starts_on: r.starts_on,
       ends_on: r.ends_on,
       capacity: r.capacity,
+      spots_available: r.spots_available,
       language: r.language,
       description: r.description,
       short_description: r.short_description,
