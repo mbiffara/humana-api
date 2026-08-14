@@ -153,8 +153,9 @@ module ApiSerializers
     }
 
     if include_bookings
-      data[:booking_count] = client.bookings.size
-      data[:bookings] = client.bookings.order(created_at: :desc).limit(10).map { |b|
+      visible = client.bookings.where.not(status: "pending_payment")
+      data[:booking_count] = visible.count
+      data[:bookings] = visible.order(created_at: :desc).limit(10).map { |b|
         { id: b.id, reference: b.reference, status: b.status, created_at: b.created_at }
       }
     end
