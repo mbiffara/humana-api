@@ -7,6 +7,7 @@ module Api
         # GET /api/v1/hotel/bookings
         def index
           scope = hotel_bookings
+                    .where.not(status: "pending_payment")
                     .includes(:experience, :client, :room_type, :room, organization: [])
                     .order(created_at: :desc)
           scope = scope.where(status: params[:status]) if params[:status].present?

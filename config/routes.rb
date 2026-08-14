@@ -112,6 +112,7 @@ Rails.application.routes.draw do
         end
         resource :subscription, only: %i[show create update destroy] do
           get :plans, on: :collection
+          post :verify, on: :member
         end
         resource :dashboard, only: [:show], controller: "dashboard"
         resources :room_types do

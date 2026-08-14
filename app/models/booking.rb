@@ -1,5 +1,5 @@
 class Booking < ApplicationRecord
-  STATUSES = %w[inquiry confirmed cancelled completed].freeze
+  STATUSES = %w[pending_payment inquiry confirmed cancelled completed].freeze
 
   belongs_to :organization # the booking agency
   belongs_to :experience, optional: true
@@ -27,7 +27,7 @@ class Booking < ApplicationRecord
   validate :room_type_has_availability, if: :availability_check_needed?
   before_save :reverify_availability_under_lock, if: :availability_check_needed?
 
-  scope :active, -> { where.not(status: "cancelled") }
+  scope :active, -> { where.not(status: %w[cancelled pending_payment]) }
   # All bookings a hotel serves — via one of its experiences or booked
   # directly against the hotel (e.g. retreat bookings without an experience).
   # The experience is authoritative when present: bookings.hotel_id only
@@ -72,6 +72,8 @@ class Booking < ApplicationRecord
   def compute_amounts
     if experience
       compute_experience_amounts
+    elsif retreat && room_type
+      compute_retreat_amounts
     elsif room_type && starts_on && ends_on
       compute_lodging_amounts
     end
@@ -83,6 +85,19 @@ class Booking < ApplicationRecord
     end
     self.amount_cents = experience.price_cents * guests if amount_cents.to_i.zero?
     self.commission_cents = (amount_cents * experience.commission_rate).round
+  end
+
+  # Retreat booking: flat per-guest price from retreat_pricings for the chosen room type.
+  # Falls back to lodging calculation if no retreat pricing is configured.
+  def compute_retreat_amounts
+    pricing = retreat.retreat_pricings.find_by(room_type_id: room_type_id)
+    if pricing
+      self.currency = pricing.currency if currency.blank? || (new_record? && !will_save_change_to_currency?)
+      self.amount_cents = pricing.price_per_guest_cents * guests if amount_cents.to_i.zero?
+      self.commission_cents = (amount_cents * retreat.commission_rate).round
+    elsif starts_on && ends_on
+      compute_lodging_amounts
+    end
   end
 
   # Direct hotel booking: price from room_type * nights * guests.
