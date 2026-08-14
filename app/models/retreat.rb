@@ -67,7 +67,7 @@ class Retreat < ApplicationRecord
   end
 
   def publish!
-    update!(status: "active", published_at: Time.current)
+    update(status: "active", published_at: Time.current)
   end
 
   private
