@@ -132,6 +132,8 @@ class Booking < ApplicationRecord
   # booking for 2 guests automatically.
   def default_guests_from_room_type
     return unless room_type && guests == 1 && room_type.capacity > 1
+    # Retreat pricing is per-guest; don't auto-bump guests to room capacity
+    return if retreat_id.present? || experience_id.present?
 
     self.guests = room_type.capacity
   end
