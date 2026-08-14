@@ -78,8 +78,13 @@ class Retreat < ApplicationRecord
   end
 
   # Cache the lowest per-guest price across all room types for quick display.
+  # Falls back to cheapest hotel room × duration when no retreat-specific pricing exists.
   def compute_min_price
     lowest = retreat_pricings.minimum(:price_per_guest_cents)
+    if lowest.nil? && hotel.present?
+      cheapest_room = hotel.room_types.where(status: "active").minimum(:price_per_night_cents)
+      lowest = cheapest_room ? cheapest_room * (duration_nights || 1) : nil
+    end
     self.min_price_cents = lowest || 0
   end
 end
