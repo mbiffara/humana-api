@@ -42,7 +42,7 @@ module Api
 
         def pricing_params
           params.require(:retreat_pricing).permit(
-            :room_type_id, :price_per_guest_cents, :currency, :occupancy_label, :max_guests
+            :room_type_id, :price_per_guest_cents, :currency, :occupancy_label, :max_guests, :allocated_rooms
           )
         end
       end

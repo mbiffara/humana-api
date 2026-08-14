@@ -6,6 +6,7 @@ class RetreatPricing < ApplicationRecord
   belongs_to :room_type
 
   validates :price_per_guest_cents, numericality: { greater_than_or_equal_to: 0 }
+  validates :allocated_rooms, numericality: { greater_than: 0 }, allow_nil: true
   validates :room_type_id, uniqueness: { scope: :retreat_id,
     message: "pricing already exists for this room type in this retreat" }
 

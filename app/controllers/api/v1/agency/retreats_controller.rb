@@ -65,7 +65,8 @@ module Api
             (params[:pricings] || []).each do |pricing_params|
               @retreat.retreat_pricings.create!(
                 room_type_id: pricing_params[:room_type_id],
-                price_per_guest_cents: pricing_params[:price_per_guest_cents]
+                price_per_guest_cents: pricing_params[:price_per_guest_cents],
+                allocated_rooms: pricing_params[:allocated_rooms]
               )
             end
           end
@@ -121,7 +122,8 @@ module Api
             (params[:pricings] || []).each do |pricing_params|
               @retreat.retreat_pricings.create!(
                 room_type_id: pricing_params[:room_type_id],
-                price_per_guest_cents: pricing_params[:price_per_guest_cents]
+                price_per_guest_cents: pricing_params[:price_per_guest_cents],
+                allocated_rooms: pricing_params[:allocated_rooms]
               )
             end
           end

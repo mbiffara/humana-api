@@ -454,7 +454,8 @@ module ApiSerializers
       price_per_guest: p.price_per_guest,
       currency: p.currency,
       occupancy_label: p.occupancy_label,
-      max_guests: p.max_guests
+      max_guests: p.max_guests,
+      allocated_rooms: p.allocated_rooms
     }
   end
 
