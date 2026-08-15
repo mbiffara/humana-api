@@ -32,10 +32,15 @@ module Api
 
         def summary(scope)
           active = scope.active
+          total_revenue = active.sum(:amount_cents)
+          total_commission = active.sum(:commission_cents)
+          office_rate = PlatformSetting.first&.office_fee_rate || 0.02
+          total_office = (total_revenue * office_rate).round
           {
             total_count: scope.count,
-            total_revenue_cents: active.sum(:amount_cents),
-            total_commission_cents: active.sum(:commission_cents)
+            total_revenue_cents: total_revenue,
+            total_commission_cents: total_commission,
+            total_net_cents: total_revenue - total_commission - total_office
           }
         end
       end
