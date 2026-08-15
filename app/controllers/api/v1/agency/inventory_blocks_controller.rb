@@ -18,7 +18,7 @@ module Api
             scope = scope.where("starts_on <= ? AND ends_on >= ?", params[:to], params[:from])
           end
 
-          bookings = scope.includes(:room_type, :hotel).to_a
+          bookings = scope.includes(:room_type, hotel: :hotel_images).to_a
 
           # Group by hotel + room_type
           grouped = {}
