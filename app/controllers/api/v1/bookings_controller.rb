@@ -98,7 +98,7 @@ module Api
       end
 
       def update_params
-        params.require(:booking).permit(:status, :room_type_id, :guests, :notes)
+        params.require(:booking).permit(:status, :room_type_id, :guests, :notes, :client_id)
       end
 
       # Commission and volume totals for the agency's commissions view.
