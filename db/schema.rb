@@ -355,6 +355,7 @@ ActiveRecord::Schema[8.0].define(version: 2026_08_11_200000) do
     t.string "currency", default: "USD", null: false
     t.string "occupancy_label"
     t.integer "max_guests", default: 2
+    t.integer "allocated_rooms"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.index ["retreat_id", "room_type_id"], name: "index_retreat_pricings_on_retreat_id_and_room_type_id", unique: true
