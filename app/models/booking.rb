@@ -128,13 +128,20 @@ class Booking < ApplicationRecord
     self.room_type ||= room&.room_type
   end
 
-  # Discard a stale retreat_id that doesn't belong to the booking's hotel.
-  # Prevents lodging bookings from being priced as retreat bookings when the
-  # frontend sends a leftover retreat_id from a previous browsing session.
+  # Discard a stale retreat_id that doesn't belong to the booking's hotel,
+  # or one that has no pricing for the selected room type (i.e. a direct
+  # lodging booking at a hotel that also hosts retreats). Prevents lodging
+  # bookings from being priced as retreat bookings when the frontend sends
+  # a leftover retreat_id from a previous browsing session.
   def clear_mismatched_retreat
     return unless retreat_id.present? && hotel_id.present?
 
-    self.retreat_id = nil if retreat.hotel_id != hotel_id
+    if retreat.hotel_id != hotel_id
+      self.retreat_id = nil
+    elsif room_type_id.present? && !experience_id.present?
+      # No matching retreat pricing for this room type → direct lodging booking
+      self.retreat_id = nil unless retreat.retreat_pricings.exists?(room_type_id: room_type_id)
+    end
   end
 
   # Default guests to room type capacity when not explicitly set (i.e. still
