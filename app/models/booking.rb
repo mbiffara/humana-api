@@ -93,7 +93,7 @@ class Booking < ApplicationRecord
     pricing = retreat.retreat_pricings.find_by(room_type_id: room_type_id)
     if pricing
       self.currency = pricing.currency if currency.blank? || (new_record? && !will_save_change_to_currency?)
-      self.amount_cents = pricing.price_per_guest_cents * guests if amount_cents.to_i.zero?
+      self.amount_cents = pricing.price_per_guest_cents if amount_cents.to_i.zero?
       self.commission_cents = (amount_cents * retreat.commission_rate).round
     elsif starts_on && ends_on
       compute_lodging_amounts
