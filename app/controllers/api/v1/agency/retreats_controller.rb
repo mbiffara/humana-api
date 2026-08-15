@@ -42,11 +42,12 @@ module Api
         end
 
         def destroy
-          if @retreat.status == "draft"
+          confirmed_bookings = Booking.active.where(retreat_id: @retreat.id).count
+          if confirmed_bookings > 0
+            render json: { error: "Cannot delete a retreat with confirmed bookings" }, status: :unprocessable_entity
+          else
             @retreat.destroy!
             head :no_content
-          else
-            render json: { error: "Only draft retreats can be deleted" }, status: :unprocessable_entity
           end
         end
 
