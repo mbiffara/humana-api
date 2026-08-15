@@ -101,7 +101,7 @@ class Booking < ApplicationRecord
     end
   end
 
-  # Direct hotel booking: price from room_type * nights * guests.
+  # Direct hotel booking: price from room_type * nights (per-room rate).
   # Commission from platform default rate.
   def compute_lodging_amounts
     nights = (ends_on - starts_on).to_i
@@ -111,7 +111,7 @@ class Booking < ApplicationRecord
       self.currency = room_type.currency
     end
     if amount_cents.to_i.zero?
-      self.amount_cents = room_type.price_per_night_cents * nights * guests
+      self.amount_cents = room_type.price_per_night_cents * nights
     end
     platform = PlatformSetting.current
     rate = platform&.agency_commission_rate || 0.16
