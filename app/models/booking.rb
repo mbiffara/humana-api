@@ -215,12 +215,33 @@ class Booking < ApplicationRecord
   end
 
   def room_type_has_availability
+    # Retreat bookings use the retreat's allocated_rooms, not the hotel's
+    # physical room inventory. The creating agency has already committed
+    # those rooms from their own inventory blocks.
+    if retreat_id.present?
+      validate_retreat_room_availability
+      return
+    end
+
     calc = availability_calculator
     # Room types without physical Room records don't track inventory; nothing
     # to enforce against.
     return unless calc.tracked?
 
     errors.add(:room_type, "has no availability for the selected dates") if calc.min_available < 1
+  end
+
+  def validate_retreat_room_availability
+    pricing = retreat.retreat_pricings.find_by(room_type_id: room_type_id)
+    return unless pricing&.allocated_rooms # no allocation = no constraint
+
+    existing = Booking.active
+                      .where(retreat_id: retreat_id, room_type_id: room_type_id)
+                      .where.not(id: id)
+                      .count
+    if existing >= pricing.allocated_rooms
+      errors.add(:room_type, "has no availability for the selected dates")
+    end
   end
 
   # The validation above is a read-then-write race: two concurrent requests
@@ -236,6 +257,13 @@ class Booking < ApplicationRecord
         ["SELECT pg_advisory_xact_lock(?, ?)", INVENTORY_LOCK_NAMESPACE, room_type_id]
       )
     )
+
+    if retreat_id.present?
+      validate_retreat_room_availability
+      raise ActiveRecord::RecordInvalid, self if errors.any?
+      return
+    end
+
     calc = availability_calculator
     return unless calc.tracked?
     return if calc.min_available >= 1
