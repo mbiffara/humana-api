@@ -14,6 +14,7 @@ class Booking < ApplicationRecord
   before_validation :assign_reference, on: :create
   before_validation :snapshot_dates, on: :create
   before_validation :infer_room_type_from_room
+  before_validation :clear_mismatched_retreat, on: :create
   before_validation :default_guests_from_room_type, on: :create
   before_validation :compute_amounts
 
@@ -125,6 +126,15 @@ class Booking < ApplicationRecord
 
   def infer_room_type_from_room
     self.room_type ||= room&.room_type
+  end
+
+  # Discard a stale retreat_id that doesn't belong to the booking's hotel.
+  # Prevents lodging bookings from being priced as retreat bookings when the
+  # frontend sends a leftover retreat_id from a previous browsing session.
+  def clear_mismatched_retreat
+    return unless retreat_id.present? && hotel_id.present?
+
+    self.retreat_id = nil if retreat.hotel_id != hotel_id
   end
 
   # Default guests to room type capacity when not explicitly set (i.e. still
