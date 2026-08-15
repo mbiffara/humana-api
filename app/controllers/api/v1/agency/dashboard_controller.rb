@@ -10,7 +10,7 @@ module Api
 
           render json: {
             dashboard: {
-              total_bookings: bookings.count,
+              total_guests: active.sum(:guests),
               confirmed_count: bookings.where(status: "confirmed").count,
               commission_earned_cents: active.sum(:commission_cents),
               volume_cents: active.sum(:amount_cents),
