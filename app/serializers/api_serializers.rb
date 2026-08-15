@@ -545,6 +545,10 @@ module ApiSerializers
   def billing_sale(b)
     return nil unless b
 
+    office_rate = PlatformSetting.first&.office_fee_rate || 0.02
+    office_fee = (b.amount_cents * office_rate).round
+    net_cents = b.amount_cents - b.commission_cents - office_fee
+
     {
       id: b.id,
       reference: b.reference,
@@ -557,6 +561,8 @@ module ApiSerializers
       currency: b.currency,
       commission_cents: b.commission_cents,
       commission: b.commission,
+      net_cents: net_cents,
+      net: net_cents / 100.0,
       retreat_name: b.retreat&.name,
       buying_agency: b.organization&.name,
       client_name: b.client&.name,
