@@ -78,7 +78,8 @@ module ApiSerializers
       latitude: hotel.latitude&.to_f,
       longitude: hotel.longitude&.to_f,
       certified: hotel.certified,
-      wellness_standard: hotel.wellness_standard
+      wellness_standard: hotel.wellness_standard,
+      cover_image_url: hotel.cover_image&.image_url
     }
   end
 
