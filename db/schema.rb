@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2026_08_15_000000) do
+ActiveRecord::Schema[8.0].define(version: 2026_09_14_000000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -194,6 +194,28 @@ ActiveRecord::Schema[8.0].define(version: 2026_08_15_000000) do
     t.string "website"
     t.string "contact_email"
     t.datetime "onboarding_completed_at"
+    t.string "state_region"
+    t.string "instagram"
+    t.string "nearest_airport"
+    t.decimal "airport_distance_km", precision: 6, scale: 1
+    t.integer "airport_time_min"
+    t.string "airport_transfer"
+    t.text "airport_transfer_notes"
+    t.decimal "distance_to_center_km", precision: 6, scale: 1
+    t.string "property_type"
+    t.string "property_type_other"
+    t.string "environments", default: [], null: false, array: true
+    t.boolean "pet_friendly"
+    t.boolean "pet_dogs"
+    t.boolean "pet_cats"
+    t.boolean "pet_size_restriction"
+    t.string "pet_size_restriction_notes"
+    t.boolean "pet_extra_cost"
+    t.string "pet_extra_cost_notes"
+    t.boolean "pet_common_areas"
+    t.boolean "pet_specific_rooms"
+    t.integer "group_min_guests"
+    t.integer "group_max_guests"
     t.index ["country_code"], name: "index_hotels_on_country_code"
     t.index ["organization_id"], name: "index_hotels_on_organization_id"
   end
@@ -355,9 +377,9 @@ ActiveRecord::Schema[8.0].define(version: 2026_08_15_000000) do
     t.string "currency", default: "USD", null: false
     t.string "occupancy_label"
     t.integer "max_guests", default: 2
-    t.integer "allocated_rooms"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.integer "allocated_rooms"
     t.index ["retreat_id", "room_type_id"], name: "index_retreat_pricings_on_retreat_id_and_room_type_id", unique: true
     t.index ["retreat_id"], name: "index_retreat_pricings_on_retreat_id"
     t.index ["room_type_id"], name: "index_retreat_pricings_on_room_type_id"
