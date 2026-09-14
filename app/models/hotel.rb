@@ -19,6 +19,7 @@ class Hotel < ApplicationRecord
   # store nil so the `allow_nil` format/inclusion rules below still apply.
   BLANK_TO_NIL_FIELDS = %i[
     check_in_time check_out_time
+    city country country_code
     state_region instagram nearest_airport
     airport_transfer airport_transfer_notes
     property_type property_type_other

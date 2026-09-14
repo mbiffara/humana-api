@@ -55,6 +55,16 @@ RSpec.describe "Hotel profile fields", type: :request do
       expect(hotel.state_region).to be_nil
     end
 
+    it "blanks out the location text the same way" do
+      patch_profile(city: "", country: "  ", country_code: "")
+
+      expect(response).to have_http_status(:ok)
+      hotel.reload
+      expect(hotel.city).to be_nil
+      expect(hotel.country).to be_nil
+      expect(hotel.country_code).to be_nil
+    end
+
     it "clears the free-text label when the property type is blanked out" do
       hotel.update!(property_type: "other", property_type_other: "Glamping dome")
 
