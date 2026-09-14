@@ -79,7 +79,15 @@ module ApiSerializers
       longitude: hotel.longitude&.to_f,
       certified: hotel.certified,
       wellness_standard: hotel.wellness_standard,
-      cover_image_url: hotel.cover_image&.image_url
+      cover_image_url: hotel.cover_image&.image_url,
+      state_region: hotel.state_region,
+      property_type: hotel.property_type,
+      property_type_other: hotel.property_type_other,
+      environments: hotel.environments,
+      nearest_airport: hotel.nearest_airport,
+      pet_friendly: hotel.pet_friendly,
+      group_min_guests: hotel.group_min_guests,
+      group_max_guests: hotel.group_max_guests
     }
   end
 
@@ -93,13 +101,26 @@ module ApiSerializers
       address: hotel.try(:address),
       postal_code: hotel.try(:postal_code),
       phone: hotel.phone,
-      stars: hotel.stars,
       total_rooms: hotel.total_rooms,
       check_in_time: hotel.check_in_time,
       check_out_time: hotel.check_out_time,
       logo_url: hotel.logo_url,
       website: hotel.website,
       contact_email: hotel.contact_email,
+      instagram: hotel.instagram,
+      airport_distance_km: hotel.airport_distance_km&.to_f,
+      airport_time_min: hotel.airport_time_min,
+      airport_transfer: hotel.airport_transfer,
+      airport_transfer_notes: hotel.airport_transfer_notes,
+      distance_to_center_km: hotel.distance_to_center_km&.to_f,
+      pet_dogs: hotel.pet_dogs,
+      pet_cats: hotel.pet_cats,
+      pet_size_restriction: hotel.pet_size_restriction,
+      pet_size_restriction_notes: hotel.pet_size_restriction_notes,
+      pet_extra_cost: hotel.pet_extra_cost,
+      pet_extra_cost_notes: hotel.pet_extra_cost_notes,
+      pet_common_areas: hotel.pet_common_areas,
+      pet_specific_rooms: hotel.pet_specific_rooms,
       room_types: rts.map { |rt| room_type(rt, include_details: true) },
       amenities: hotel.hotel_amenities.order(:category, :position).map { |a|
         { id: a.id, name: a.name, category: a.category, icon: a.icon, position: a.position, featured: a.featured }

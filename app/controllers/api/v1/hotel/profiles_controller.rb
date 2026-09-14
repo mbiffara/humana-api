@@ -59,8 +59,20 @@ module Api
           params.require(:hotel).permit(
             :name, :city, :country, :country_code, :latitude, :longitude,
             :description, :address, :certified, :wellness_standard,
-            :phone, :stars, :check_in_time, :check_out_time, :total_rooms,
-            :website, :contact_email, :postal_code, :logo_url
+            :phone, :check_in_time, :check_out_time, :total_rooms,
+            :website, :contact_email, :postal_code, :logo_url,
+            # Location detail
+            :state_region, :instagram, :nearest_airport, :airport_distance_km,
+            :airport_time_min, :airport_transfer, :airport_transfer_notes,
+            :distance_to_center_km,
+            # Property type and environments
+            :property_type, :property_type_other, { environments: [] },
+            # Pet policy
+            :pet_friendly, :pet_dogs, :pet_cats, :pet_size_restriction,
+            :pet_size_restriction_notes, :pet_extra_cost, :pet_extra_cost_notes,
+            :pet_common_areas, :pet_specific_rooms,
+            # Group size
+            :group_min_guests, :group_max_guests
           )
         end
       end
