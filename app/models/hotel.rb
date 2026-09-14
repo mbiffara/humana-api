@@ -15,6 +15,18 @@ class Hotel < ApplicationRecord
   has_many :hotel_amenities, dependent: :destroy
   has_many :hotel_images, dependent: :destroy
 
+  # Optional text the onboarding form clears by submitting an empty string —
+  # store nil so the `allow_nil` format/inclusion rules below still apply.
+  BLANK_TO_NIL_FIELDS = %i[
+    check_in_time check_out_time
+    state_region instagram nearest_airport
+    airport_transfer airport_transfer_notes
+    property_type property_type_other
+    pet_size_restriction_notes pet_extra_cost_notes
+    website phone contact_email postal_code address description
+  ].freeze
+
+  before_validation :nullify_blank_optional_text
   before_validation :normalize_environments
   before_validation :clear_property_type_other_unless_other
   before_validation :clear_pet_policy_unless_friendly
@@ -66,6 +78,13 @@ class Hotel < ApplicationRecord
   end
 
   private
+
+  def nullify_blank_optional_text
+    BLANK_TO_NIL_FIELDS.each do |field|
+      value = self[field]
+      self[field] = nil if value.is_a?(String) && value.strip.empty?
+    end
+  end
 
   def normalize_environments
     self.environments = Array(environments).compact_blank.uniq

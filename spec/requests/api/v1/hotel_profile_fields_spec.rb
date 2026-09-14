@@ -38,6 +38,34 @@ RSpec.describe "Hotel profile fields", type: :request do
     end
   end
 
+  describe "blank optional text" do
+    it "stores an empty string as nil instead of failing validation" do
+      hotel.update!(check_in_time: "14:00", property_type: "resort",
+                    instagram: "@old", airport_transfer: "paid")
+
+      patch_profile(check_in_time: "", property_type: "", instagram: "  ",
+                    airport_transfer: "", state_region: "")
+
+      expect(response).to have_http_status(:ok)
+      hotel.reload
+      expect(hotel.check_in_time).to be_nil
+      expect(hotel.property_type).to be_nil
+      expect(hotel.instagram).to be_nil
+      expect(hotel.airport_transfer).to be_nil
+      expect(hotel.state_region).to be_nil
+    end
+
+    it "clears the free-text label when the property type is blanked out" do
+      hotel.update!(property_type: "other", property_type_other: "Glamping dome")
+
+      patch_profile(property_type: "")
+
+      expect(response).to have_http_status(:ok)
+      expect(hotel.reload.property_type).to be_nil
+      expect(hotel.property_type_other).to be_nil
+    end
+  end
+
   describe "retired stars field" do
     it "ignores stars in the payload instead of failing" do
       patch_profile(stars: 5, name: "Still Fine")
@@ -161,6 +189,16 @@ RSpec.describe "Hotel profile fields", type: :request do
 
       expect(response).to have_http_status(:ok)
       expect(hotel.reload.environments).to eq(%w[beach])
+    end
+
+    # Checkbox groups post a blank entry when nothing is ticked.
+    it "drops blank entries posted by an empty checkbox group" do
+      hotel.update!(environments: %w[beach])
+
+      patch_profile(environments: [""])
+
+      expect(response).to have_http_status(:ok)
+      expect(hotel.reload.environments).to eq([])
     end
 
     it "clears the selection with an empty array" do
