@@ -80,6 +80,7 @@ module ApiSerializers
       certified: hotel.certified,
       wellness_standard: hotel.wellness_standard,
       cover_image_url: hotel.cover_image&.image_url,
+      video_url: hotel.video_url,
       state_region: hotel.state_region,
       property_type: hotel.property_type,
       property_type_other: hotel.property_type_other,

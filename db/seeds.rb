@@ -210,6 +210,7 @@ if Rails.env.development? || Hotel.count.zero?
     h.property_type = "resort"
     h.environments = %w[beach island countryside]
     h.instagram = "@shantiwellness"
+    h.video_url = "https://www.youtube.com/watch?v=dQw4w9WgXcQ"
     h.nearest_airport = "Ibiza (IBZ)"
     h.airport_distance_km = 18.5
     h.airport_time_min = 25
@@ -344,6 +345,7 @@ if Rails.env.development? || Hotel.count.zero?
     h.property_type = "eco_lodge"
     h.environments = %w[jungle beach]
     h.instagram = "@casacenotetulum"
+    h.video_url = "https://vimeo.com/76979871"
     h.nearest_airport = "Cancún (CUN)"
     h.airport_distance_km = 120.0
     h.airport_time_min = 95

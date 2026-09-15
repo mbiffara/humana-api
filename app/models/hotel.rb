@@ -3,6 +3,10 @@ class Hotel < ApplicationRecord
   ENVIRONMENTS = %w[countryside beach jungle urban mountain hills island].freeze
   AIRPORT_TRANSFERS = %w[none included paid].freeze
 
+  # Hosts we accept for the optional property video. The hotel hosts the video
+  # elsewhere and only stores the link.
+  VIDEO_HOSTS = %w[youtube.com youtu.be vimeo.com instagram.com].freeze
+
   # "flexible" is a sentinel the onboarding form offers next to a 24h time.
   TIME_FORMAT = /\A(?:flexible|(?:[01]\d|2[0-3]):[0-5]\d)\z/
 
@@ -25,6 +29,7 @@ class Hotel < ApplicationRecord
     property_type property_type_other
     pet_size_restriction_notes pet_extra_cost_notes
     website phone contact_email postal_code address description
+    video_url
   ].freeze
 
   before_validation :nullify_blank_optional_text
@@ -43,6 +48,10 @@ class Hotel < ApplicationRecord
   validates :airport_time_min, numericality: { only_integer: true, greater_than_or_equal_to: 0 }, allow_nil: true
   validates :distance_to_center_km, numericality: { greater_than_or_equal_to: 0 }, allow_nil: true
   validates :airport_transfer, inclusion: { in: AIRPORT_TRANSFERS }, allow_nil: true
+
+  # Property video
+  validates :video_url, length: { maximum: 500 }, allow_nil: true
+  validate :video_url_must_be_a_known_host
 
   # Property type
   validates :property_type, inclusion: { in: PROPERTY_TYPES }, allow_nil: true
@@ -89,6 +98,24 @@ class Hotel < ApplicationRecord
 
   def normalize_environments
     self.environments = Array(environments).compact_blank.uniq
+  end
+
+  # Only the platforms the onboarding form offers, so the app can embed the
+  # player without guessing. `www.` is ignored; anything else is rejected.
+  def video_url_must_be_a_known_host
+    return if video_url.blank?
+
+    uri = URI.parse(video_url)
+    unless uri.is_a?(URI::HTTP) && uri.host.present?
+      errors.add(:video_url, "must be an http(s) link")
+      return
+    end
+
+    return if VIDEO_HOSTS.include?(uri.host.downcase.delete_prefix("www."))
+
+    errors.add(:video_url, "must be a YouTube, Vimeo or Instagram link")
+  rescue URI::InvalidURIError
+    errors.add(:video_url, "is not a valid URL")
   end
 
   def environments_must_be_known
