@@ -294,6 +294,7 @@ module ApiSerializers
       total_rooms: rt.total_rooms,
       position: rt.position,
       bed_type: rt.bed_type,
+      beds_count: rt.beds_count,
       view_type: rt.view_type,
       amenities_list: rt.amenities
     }
