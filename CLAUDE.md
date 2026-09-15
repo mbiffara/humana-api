@@ -84,6 +84,7 @@ ApplicationController
     ├── Api::V1::Hotel::BaseController  # require_hotel!
     │   ├── ProfilesController         # + submit_for_review
     │   ├── RoomTypesController
+    │   ├── CommonSpacesController     # + nested: images (index/batch)
     │   ├── AmenitiesController        # + batch
     │   ├── ImagesController           # + batch
     │   └── RetreatsController         # + nested: days, activities, facilitators,
@@ -123,6 +124,7 @@ organizations, users, hotels, experiences, clients, bookings,
 retreats, retreat_days, retreat_activities, retreat_facilitators,
 retreat_inclusions, retreat_pricings, retreat_images,
 room_types, room_images, hotel_amenities, hotel_images,
+common_spaces, common_space_images,
 invitations, countries, platform_settings,
 subscription_plans, subscriptions, stripe_connect_accounts
 ```
@@ -180,6 +182,7 @@ namespace :api do
         post :submit_for_review, on: :member
       end
       resources :room_types
+      resources :common_spaces        # + nested images/batch
       resources :amenities, only: [:index] { collection { post :batch } }
       resources :images, only: %i[index create destroy] { collection { post :batch } }
       resources :retreats do

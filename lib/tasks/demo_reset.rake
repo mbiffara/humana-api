@@ -51,6 +51,8 @@ namespace :demo do
 
       # --- Hotel assets ---
       puts "  Removing hotel data..."
+      CommonSpaceImage.delete_all
+      CommonSpace.delete_all
       HotelAmenity.delete_all
       HotelImage.delete_all
       Hotel.delete_all

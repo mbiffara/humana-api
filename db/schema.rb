@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2026_09_16_000000) do
+ActiveRecord::Schema[8.0].define(version: 2026_09_16_100001) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -96,6 +96,41 @@ ActiveRecord::Schema[8.0].define(version: 2026_09_16_000000) do
     t.datetime "updated_at", null: false
     t.index ["organization_id", "email"], name: "index_clients_on_organization_id_and_email"
     t.index ["organization_id"], name: "index_clients_on_organization_id"
+  end
+
+  create_table "common_space_images", force: :cascade do |t|
+    t.bigint "common_space_id", null: false
+    t.string "image_url", null: false
+    t.integer "position", default: 0, null: false
+    t.boolean "is_primary", default: false, null: false
+    t.string "alt_text"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["common_space_id", "position"], name: "index_common_space_images_on_common_space_id_and_position"
+    t.index ["common_space_id"], name: "index_common_space_images_on_common_space_id"
+  end
+
+  create_table "common_spaces", force: :cascade do |t|
+    t.bigint "hotel_id", null: false
+    t.string "name", null: false
+    t.string "space_type", null: false
+    t.string "space_type_other"
+    t.integer "capacity_seated"
+    t.integer "capacity_yoga"
+    t.integer "capacity_auditorium"
+    t.integer "capacity_banquet"
+    t.integer "capacity_workshop"
+    t.decimal "area_sqm", precision: 8, scale: 2
+    t.string "floor_type"
+    t.string "floor_type_other"
+    t.boolean "exclusive_for_groups", default: false, null: false
+    t.string "equipment", default: [], array: true
+    t.string "equipment_other"
+    t.integer "position", default: 0, null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["hotel_id", "position"], name: "index_common_spaces_on_hotel_id_and_position"
+    t.index ["hotel_id"], name: "index_common_spaces_on_hotel_id"
   end
 
   create_table "countries", force: :cascade do |t|
@@ -578,6 +613,8 @@ ActiveRecord::Schema[8.0].define(version: 2026_09_16_000000) do
   add_foreign_key "bookings", "room_types"
   add_foreign_key "bookings", "rooms"
   add_foreign_key "clients", "organizations"
+  add_foreign_key "common_space_images", "common_spaces"
+  add_foreign_key "common_spaces", "hotels"
   add_foreign_key "experiences", "hotels"
   add_foreign_key "hotel_amenities", "hotels"
   add_foreign_key "hotel_images", "hotels"

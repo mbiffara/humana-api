@@ -19,6 +19,7 @@ class Hotel < ApplicationRecord
   has_many :retreats, dependent: :destroy
   has_many :hotel_amenities, dependent: :destroy
   has_many :hotel_images, dependent: :destroy
+  has_many :common_spaces, dependent: :destroy
 
   # Optional text the onboarding form clears by submitting an empty string —
   # store nil so the `allow_nil` format/inclusion rules below still apply.

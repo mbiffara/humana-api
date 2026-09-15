@@ -121,6 +121,11 @@ Rails.application.routes.draw do
           end
           resources :rate_tiers, controller: "room_rate_tiers", except: [:show]
         end
+        resources :common_spaces do
+          resources :images, controller: "common_space_images", only: [:index] do
+            collection { post :batch }
+          end
+        end
         resources :rooms, only: %i[index create update destroy]
         resources :availability_blocks, only: %i[index create destroy]
         get "calendar", to: "calendar#index"
