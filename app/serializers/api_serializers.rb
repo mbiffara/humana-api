@@ -126,8 +126,52 @@ module ApiSerializers
       amenities: hotel.hotel_amenities.order(:category, :position).map { |a|
         { id: a.id, name: a.name, category: a.category, icon: a.icon, position: a.position, featured: a.featured }
       },
-      images: hotel.hotel_images.order(:position).map { |i| hotel_image(i) }
+      images: hotel.hotel_images.order(:position).map { |i| hotel_image(i) },
+      common_spaces: hotel.common_spaces.ordered.includes(:common_space_images).map { |cs|
+        common_space(cs)
+      }
     )
+  end
+
+  def common_space(cs)
+    return nil unless cs
+
+    images = cs.common_space_images.to_a.sort_by { |img| [img.position, img.id] }
+    primary = images.find(&:is_primary) || images.first
+
+    {
+      id: cs.id,
+      hotel_id: cs.hotel_id,
+      name: cs.name,
+      space_type: cs.space_type,
+      space_type_other: cs.space_type_other,
+      capacity_seated: cs.capacity_seated,
+      capacity_yoga: cs.capacity_yoga,
+      capacity_auditorium: cs.capacity_auditorium,
+      capacity_banquet: cs.capacity_banquet,
+      capacity_workshop: cs.capacity_workshop,
+      area_sqm: cs.area_sqm&.to_f,
+      floor_type: cs.floor_type,
+      floor_type_other: cs.floor_type_other,
+      exclusive_for_groups: cs.exclusive_for_groups,
+      equipment: cs.equipment,
+      equipment_other: cs.equipment_other,
+      position: cs.position,
+      image_url: primary&.image_url,
+      images: images.map { |img| common_space_image(img) }
+    }
+  end
+
+  def common_space_image(img)
+    return nil unless img
+
+    {
+      id: img.id,
+      image_url: img.image_url,
+      position: img.position,
+      is_primary: img.is_primary,
+      alt_text: img.alt_text
+    }
   end
 
   def hotel_image(img)
