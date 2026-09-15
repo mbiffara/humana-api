@@ -80,6 +80,7 @@ module ApiSerializers
       certified: hotel.certified,
       wellness_standard: hotel.wellness_standard,
       cover_image_url: hotel.cover_image&.image_url,
+      video_url: hotel.video_url,
       state_region: hotel.state_region,
       property_type: hotel.property_type,
       property_type_other: hotel.property_type_other,
@@ -125,10 +126,21 @@ module ApiSerializers
       amenities: hotel.hotel_amenities.order(:category, :position).map { |a|
         { id: a.id, name: a.name, category: a.category, icon: a.icon, position: a.position, featured: a.featured }
       },
-      images: hotel.hotel_images.order(:position).map { |i|
-        { id: i.id, image_url: i.image_url, category: i.category, position: i.position, is_cover: i.is_cover, alt_text: i.alt_text }
-      }
+      images: hotel.hotel_images.order(:position).map { |i| hotel_image(i) }
     )
+  end
+
+  def hotel_image(img)
+    return nil unless img
+
+    {
+      id: img.id,
+      image_url: img.image_url,
+      category: img.category,
+      position: img.position,
+      is_cover: img.is_cover,
+      alt_text: img.alt_text
+    }
   end
 
   # `include_commission` is false for public endpoints — commission data is

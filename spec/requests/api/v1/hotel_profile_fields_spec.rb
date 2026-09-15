@@ -76,6 +76,65 @@ RSpec.describe "Hotel profile fields", type: :request do
     end
   end
 
+  describe "property video" do
+    %w[
+      https://www.youtube.com/watch?v=abc
+      https://youtu.be/abc
+      https://vimeo.com/76979871
+      https://instagram.com/reel/abc
+      https://m.youtube.com/watch?v=abc
+      https://player.vimeo.com/video/76979871
+      https://www.instagram.com/reel/abc
+    ].each do |url|
+      it "accepts #{url}" do
+        patch_profile(video_url: url)
+
+        expect(response).to have_http_status(:ok)
+        expect(hotel.reload.video_url).to eq(url)
+        expect(response.parsed_body["hotel"]["video_url"]).to eq(url)
+      end
+    end
+
+    it "rejects a host outside the supported platforms" do
+      patch_profile(video_url: "https://tiktok.com/x")
+
+      expect(response).to have_http_status(:unprocessable_entity)
+      expect(hotel.reload.video_url).to be_nil
+    end
+
+    it "rejects a look-alike domain that merely ends in a supported one" do
+      patch_profile(video_url: "https://notyoutube.com/x")
+
+      expect(response).to have_http_status(:unprocessable_entity)
+      expect(hotel.reload.video_url).to be_nil
+    end
+
+    it "rejects a link that is not http(s)" do
+      patch_profile(video_url: "ftp://youtube.com/watch?v=abc")
+
+      expect(response).to have_http_status(:unprocessable_entity)
+      expect(hotel.reload.video_url).to be_nil
+    end
+
+    it "stores an empty string as nil" do
+      hotel.update!(video_url: "https://vimeo.com/76979871")
+
+      patch_profile(video_url: "")
+
+      expect(response).to have_http_status(:ok)
+      expect(hotel.reload.video_url).to be_nil
+    end
+
+    it "is serialized on the hotel profile" do
+      hotel.update!(video_url: "https://youtu.be/abc")
+
+      get "/api/v1/hotel/profile", headers: auth_headers(owner)
+
+      expect(response).to have_http_status(:ok)
+      expect(response.parsed_body["hotel"]["video_url"]).to eq("https://youtu.be/abc")
+    end
+  end
+
   describe "retired stars field" do
     it "ignores stars in the payload instead of failing" do
       patch_profile(stars: 5, name: "Still Fine")

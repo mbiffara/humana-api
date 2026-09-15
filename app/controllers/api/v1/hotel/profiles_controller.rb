@@ -60,7 +60,7 @@ module Api
             :name, :city, :country, :country_code, :latitude, :longitude,
             :description, :address, :certified, :wellness_standard,
             :phone, :check_in_time, :check_out_time, :total_rooms,
-            :website, :contact_email, :postal_code, :logo_url,
+            :website, :contact_email, :postal_code, :logo_url, :video_url,
             # Location detail
             :state_region, :instagram, :nearest_airport, :airport_distance_km,
             :airport_time_min, :airport_transfer, :airport_transfer_notes,
