@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2026_09_15_000000) do
+ActiveRecord::Schema[8.0].define(version: 2026_09_16_000000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -465,6 +465,7 @@ ActiveRecord::Schema[8.0].define(version: 2026_09_15_000000) do
     t.string "amenities", default: [], array: true
     t.string "view_type"
     t.string "status", default: "active", null: false
+    t.integer "beds_count"
     t.index ["category"], name: "index_room_types_on_category"
     t.index ["hotel_id", "name"], name: "index_room_types_on_hotel_id_and_name", unique: true
     t.index ["hotel_id"], name: "index_room_types_on_hotel_id"

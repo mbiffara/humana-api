@@ -20,6 +20,25 @@ RSpec.describe "Hotel Room Type Management API", type: :request do
       expect(body["view_type"]).to eq("garden")
     end
 
+    it "stores and returns the bed count" do
+      patch "/api/v1/hotel/room_types/#{room_type.id}",
+            params: { room_type: { beds_count: 2 } }.to_json,
+            headers: auth_headers(owner)
+
+      expect(response).to have_http_status(:ok)
+      expect(JSON.parse(response.body)["room_type"]["beds_count"]).to eq(2)
+      expect(room_type.reload.beds_count).to eq(2)
+    end
+
+    it "rejects a bed count below one" do
+      patch "/api/v1/hotel/room_types/#{room_type.id}",
+            params: { room_type: { beds_count: 0 } }.to_json,
+            headers: auth_headers(owner)
+
+      expect(response).to have_http_status(:unprocessable_entity)
+      expect(room_type.reload.beds_count).to be_nil
+    end
+
     it "rejects an unknown status" do
       patch "/api/v1/hotel/room_types/#{room_type.id}",
             params: { room_type: { status: "paused" } }.to_json,
@@ -39,6 +58,15 @@ RSpec.describe "Hotel Room Type Management API", type: :request do
       body = JSON.parse(response.body)["room_type"]
       expect(body["images"].map { |i| i["image_url"] }).to eq(["https://img.test/a.jpg"])
       expect(body["rate_tiers"].first).to include("min_rooms" => 5, "price_per_night_cents" => 28_800)
+    end
+
+    it "carries the bed count, null when the hotel never filled it in" do
+      get "/api/v1/hotel/room_types/#{room_type.id}", headers: auth_headers(owner)
+      expect(JSON.parse(response.body)["room_type"]).to include("beds_count" => nil)
+
+      room_type.update!(beds_count: 3)
+      get "/api/v1/hotel/room_types/#{room_type.id}", headers: auth_headers(owner)
+      expect(JSON.parse(response.body)["room_type"]["beds_count"]).to eq(3)
     end
   end
 

@@ -285,6 +285,10 @@ if Rails.env.development? || Hotel.count.zero?
     rt.status = "active"
     rt.currency = "USD"
   end
+  # beds_count is filled in after the block: on a database that was already
+  # seeded, find_or_create_by! returns the existing row without running it. The
+  # nil guard keeps a count a hotel set by hand from being overwritten.
+  suite.update!(beds_count: 1) if suite.beds_count.nil?
 
   deluxe = hotel1.room_types.find_or_create_by!(name: "Garden Deluxe") do |rt|
     rt.category = "superior"
@@ -298,6 +302,7 @@ if Rails.env.development? || Hotel.count.zero?
     rt.status = "active"
     rt.currency = "USD"
   end
+  deluxe.update!(beds_count: 1) if deluxe.beds_count.nil?
 
   villa = hotel1.room_types.find_or_create_by!(name: "Private Villa") do |rt|
     rt.category = "villa"
@@ -311,6 +316,7 @@ if Rails.env.development? || Hotel.count.zero?
     rt.status = "active"
     rt.currency = "USD"
   end
+  villa.update!(beds_count: 2) if villa.beds_count.nil?
 
   # — Hotel 2: Casa Cenote (México) —
   hotel2_org = Organization.find_or_create_by!(name: "Casa Cenote Tulum") do |o|
@@ -410,6 +416,7 @@ if Rails.env.development? || Hotel.count.zero?
     rt.status = "active"
     rt.currency = "USD"
   end
+  jungle_suite.update!(beds_count: 1) if jungle_suite.beds_count.nil?
 
   cenote_room = hotel2.room_types.find_or_create_by!(name: "Cenote Room") do |rt|
     rt.category = "standard"
@@ -423,6 +430,7 @@ if Rails.env.development? || Hotel.count.zero?
     rt.status = "active"
     rt.currency = "USD"
   end
+  cenote_room.update!(beds_count: 1) if cenote_room.beds_count.nil?
 
   # — Retreat 1: Wellness retreat at Shanti (España) —
   retreat1 = Retreat.find_or_initialize_by(name: "Despertar Interior: Retiro de Yoga & Meditación")
