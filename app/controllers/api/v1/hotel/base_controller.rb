@@ -12,6 +12,7 @@ module Api
         # submission from admin review until the hotel republishes.
         CONTENT_CONTROLLERS = %w[
           profiles room_types room_images amenities images availability_blocks
+          common_spaces common_space_images
         ].freeze
 
         private
