@@ -4,7 +4,8 @@ class Hotel < ApplicationRecord
   AIRPORT_TRANSFERS = %w[none included paid].freeze
 
   # Hosts we accept for the optional property video. The hotel hosts the video
-  # elsewhere and only stores the link.
+  # elsewhere and only stores the link. Subdomains count (m.youtube.com,
+  # player.vimeo.com), but a look-alike domain does not.
   VIDEO_HOSTS = %w[youtube.com youtu.be vimeo.com instagram.com].freeze
 
   # "flexible" is a sentinel the onboarding form offers next to a 24h time.
@@ -101,7 +102,9 @@ class Hotel < ApplicationRecord
   end
 
   # Only the platforms the onboarding form offers, so the app can embed the
-  # player without guessing. `www.` is ignored; anything else is rejected.
+  # player without guessing. A link pasted from a phone or a player embed lands
+  # on a subdomain (m.youtube.com, player.vimeo.com), so those count too — but
+  # the leading dot keeps a look-alike domain like notyoutube.com out.
   def video_url_must_be_a_known_host
     return if video_url.blank?
 
@@ -111,7 +114,8 @@ class Hotel < ApplicationRecord
       return
     end
 
-    return if VIDEO_HOSTS.include?(uri.host.downcase.delete_prefix("www."))
+    host = uri.host.downcase
+    return if VIDEO_HOSTS.any? { |h| host == h || host.end_with?(".#{h}") }
 
     errors.add(:video_url, "must be a YouTube, Vimeo or Instagram link")
   rescue URI::InvalidURIError

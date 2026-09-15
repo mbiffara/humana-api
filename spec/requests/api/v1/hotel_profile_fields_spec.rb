@@ -82,6 +82,9 @@ RSpec.describe "Hotel profile fields", type: :request do
       https://youtu.be/abc
       https://vimeo.com/76979871
       https://instagram.com/reel/abc
+      https://m.youtube.com/watch?v=abc
+      https://player.vimeo.com/video/76979871
+      https://www.instagram.com/reel/abc
     ].each do |url|
       it "accepts #{url}" do
         patch_profile(video_url: url)
@@ -94,6 +97,13 @@ RSpec.describe "Hotel profile fields", type: :request do
 
     it "rejects a host outside the supported platforms" do
       patch_profile(video_url: "https://tiktok.com/x")
+
+      expect(response).to have_http_status(:unprocessable_entity)
+      expect(hotel.reload.video_url).to be_nil
+    end
+
+    it "rejects a look-alike domain that merely ends in a supported one" do
+      patch_profile(video_url: "https://notyoutube.com/x")
 
       expect(response).to have_http_status(:unprocessable_entity)
       expect(hotel.reload.video_url).to be_nil
