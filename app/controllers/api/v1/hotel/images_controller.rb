@@ -4,8 +4,8 @@ module Api
       class ImagesController < BaseController
         # GET /api/v1/hotel/images
         def index
-          images = current_hotel.hotel_images.order(:position)
-          render json: { images: images.map { |i| serialize_image(i) } }
+          images = current_hotel.hotel_images.ordered
+          render json: { images: images.map { |i| ApiSerializers.hotel_image(i) } }
         end
 
         # POST /api/v1/hotel/images
@@ -13,7 +13,7 @@ module Api
           image = current_hotel.hotel_images.build(image_params)
           image.position = current_hotel.hotel_images.count
           image.save!
-          render json: { image: serialize_image(image) }, status: :created
+          render json: { image: ApiSerializers.hotel_image(image) }, status: :created
         end
 
         # DELETE /api/v1/hotel/images/:id
@@ -24,29 +24,41 @@ module Api
         end
 
         # POST /api/v1/hotel/images/batch
+        # Replaces the whole gallery in order, keeping each item's category.
+        # Exactly one image ends up as the cover: the first one flagged
+        # `is_cover`, or the first image when none is flagged. All-or-nothing —
+        # an invalid item rolls the replacement back and leaves the gallery
+        # untouched.
         def batch
-          current_hotel.hotel_images.destroy_all
+          items = params[:images] || []
+          cover_index = items.index { |img| truthy?(img[:is_cover]) } || 0
+          images = nil
 
-          images = (params[:images] || []).map.with_index do |img, i|
-            current_hotel.hotel_images.create!(
-              image_url: img[:image_url],
-              category: img[:category] || "general",
-              position: i,
-              is_cover: i == 0
-            )
+          ActiveRecord::Base.transaction do
+            current_hotel.hotel_images.destroy_all
+
+            images = items.map.with_index do |img, i|
+              current_hotel.hotel_images.create!(
+                image_url: img[:image_url],
+                category: img[:category].presence || "general",
+                alt_text: img[:alt_text],
+                position: i,
+                is_cover: i == cover_index
+              )
+            end
           end
 
-          render json: { images: images.map { |i| serialize_image(i) } }, status: :created
+          render json: { images: images.map { |i| ApiSerializers.hotel_image(i) } }, status: :created
         end
 
         private
 
         def image_params
-          params.require(:image).permit(:image_url, :category, :is_cover)
+          params.require(:image).permit(:image_url, :category, :is_cover, :alt_text)
         end
 
-        def serialize_image(i)
-          { id: i.id, image_url: i.image_url, category: i.category, position: i.position, is_cover: i.is_cover }
+        def truthy?(value)
+          ActiveModel::Type::Boolean.new.cast(value) == true
         end
       end
     end

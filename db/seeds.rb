@@ -264,6 +264,8 @@ if Rails.env.development? || Hotel.count.zero?
     { image_url: "https://images.unsplash.com/photo-1600585154340-be6161a56a0c?w=1200&q=80", category: "lobby", position: 2 },
     { image_url: "https://images.unsplash.com/photo-1540555700478-4be289fbec6d?w=1200&q=80", category: "spa", position: 3 },
     { image_url: "https://images.unsplash.com/photo-1414235077428-338989a2e8c0?w=1200&q=80", category: "restaurant", position: 4 },
+    { image_url: "https://images.unsplash.com/photo-1505873242700-f289a29e1e0f?w=1200&q=80", category: "common_area", position: 5 },
+    { image_url: "https://images.unsplash.com/photo-1416879595882-3373a0480b5b?w=1200&q=80", category: "garden", position: 6 },
   ].each do |attrs|
     hotel1.hotel_images.find_or_create_by!(image_url: attrs[:image_url]) do |i|
       i.assign_attributes(attrs)
@@ -388,6 +390,7 @@ if Rails.env.development? || Hotel.count.zero?
     { image_url: "https://images.unsplash.com/photo-1615571022219-eb45cf7faa36?w=1200&q=80", category: "pool", position: 1 },
     { image_url: "https://images.unsplash.com/photo-1559599238-308793637427?w=1200&q=80", category: "room", position: 2 },
     { image_url: "https://images.unsplash.com/photo-1544161515-4ab6ce6db874?w=1200&q=80", category: "spa", position: 3 },
+    { image_url: "https://images.unsplash.com/photo-1540541338287-41700207dee6?w=1200&q=80", category: "common_area", position: 4 },
   ].each do |attrs|
     hotel2.hotel_images.find_or_create_by!(image_url: attrs[:image_url]) do |i|
       i.assign_attributes(attrs)
