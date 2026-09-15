@@ -23,6 +23,7 @@ class RoomType < ApplicationRecord
   validates :capacity, numericality: { greater_than: 0 }
   validates :price_per_night_cents, numericality: { greater_than_or_equal_to: 0 }
   validates :bed_type, inclusion: { in: BED_TYPES }, allow_nil: true
+  validates :beds_count, numericality: { only_integer: true, greater_than_or_equal_to: 1 }, allow_nil: true
   validates :status, inclusion: { in: STATUSES }
 
   scope :by_category, ->(c) { c.present? ? where(category: c) : all }
