@@ -279,6 +279,7 @@ if Rails.env.development? || Hotel.count.zero?
     rt.area_sqm = 55
     rt.price_per_night_cents = 35000
     rt.bed_type = "king"
+    rt.beds_count = 1
     rt.view_type = "ocean"
     rt.description = "Suite espaciosa con terraza privada y vista panorámica al mar Mediterráneo. Incluye sala de estar, minibar y amenities orgánicos."
     rt.amenities = %w[air_conditioning private_terrace king_bed minibar safe_box outdoor_shower organic_toiletries free_wifi smart_tv ocean_view]
@@ -292,6 +293,7 @@ if Rails.env.development? || Hotel.count.zero?
     rt.area_sqm = 38
     rt.price_per_night_cents = 22000
     rt.bed_type = "queen"
+    rt.beds_count = 1
     rt.view_type = "garden"
     rt.description = "Habitación deluxe con acceso directo al jardín de meditación. Decoración balinesa y baño con ducha de lluvia."
     rt.amenities = %w[air_conditioning garden_view queen_bed rainfall_shower organic_toiletries free_wifi closet desk]
@@ -305,6 +307,7 @@ if Rails.env.development? || Hotel.count.zero?
     rt.area_sqm = 90
     rt.price_per_night_cents = 58000
     rt.bed_type = "king"
+    rt.beds_count = 2
     rt.view_type = "ocean"
     rt.description = "Villa privada con piscina plunge, jardín propio y dos habitaciones. La experiencia más exclusiva del resort."
     rt.amenities = %w[air_conditioning private_terrace king_bed minibar safe_box private_plunge_pool outdoor_shower organic_toiletries bathtub free_wifi smart_tv bluetooth_speaker ocean_view hammock]
@@ -404,6 +407,7 @@ if Rails.env.development? || Hotel.count.zero?
     rt.area_sqm = 45
     rt.price_per_night_cents = 28000
     rt.bed_type = "king"
+    rt.beds_count = 1
     rt.view_type = "garden"
     rt.description = "Suite elevada entre la selva maya con techo de palapa y terraza con hamaca. Baño abierto con ducha de lluvia rodeada de vegetación tropical."
     rt.amenities = %w[air_conditioning hammock king_bed rainfall_shower organic_toiletries free_wifi garden_view]
@@ -417,6 +421,7 @@ if Rails.env.development? || Hotel.count.zero?
     rt.area_sqm = 30
     rt.price_per_night_cents = 18000
     rt.bed_type = "queen"
+    rt.beds_count = 1
     rt.view_type = "garden"
     rt.description = "Habitación acogedora con acceso directo al cenote privado. Diseño minimalista inspirado en la arquitectura maya."
     rt.amenities = %w[air_conditioning pool_access rainfall_shower organic_toiletries free_wifi]
