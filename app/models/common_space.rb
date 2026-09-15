@@ -43,11 +43,17 @@ class CommonSpace < ApplicationRecord
 
   scope :ordered, -> { order(position: :asc, id: :asc) }
 
+  # The gallery in display order. Sorted in Ruby so a preloaded association
+  # costs no extra query.
+  def ordered_images
+    common_space_images.to_a.sort_by { |img| [img.position, img.id] }
+  end
+
   # The flagged primary, falling back to the first photo so a space with a
   # gallery always has a thumbnail.
   def primary_image
-    images = common_space_images.to_a
-    images.find(&:is_primary) || images.min_by { |img| [img.position, img.id] }
+    images = ordered_images
+    images.find(&:is_primary) || images.first
   end
 
   private

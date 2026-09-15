@@ -136,8 +136,7 @@ module ApiSerializers
   def common_space(cs)
     return nil unless cs
 
-    images = cs.common_space_images.to_a.sort_by { |img| [img.position, img.id] }
-    primary = images.find(&:is_primary) || images.first
+    primary = cs.primary_image
 
     {
       id: cs.id,
@@ -158,7 +157,7 @@ module ApiSerializers
       equipment_other: cs.equipment_other,
       position: cs.position,
       image_url: primary&.image_url,
-      images: images.map { |img| common_space_image(img) }
+      images: cs.ordered_images.map { |img| common_space_image(img) }
     }
   end
 

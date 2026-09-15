@@ -6,5 +6,4 @@ class CommonSpaceImage < ApplicationRecord
   validates :image_url, presence: true
 
   scope :ordered, -> { order(position: :asc, id: :asc) }
-  scope :primary, -> { where(is_primary: true) }
 end
