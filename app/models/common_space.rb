@@ -31,6 +31,7 @@ class CommonSpace < ApplicationRecord
 
   before_validation :nullify_blank_optional_text
   before_validation :normalize_equipment
+  before_validation :clear_other_labels_unless_selected
 
   validates :name, presence: true, length: { maximum: 120 }
   validates :space_type, inclusion: { in: SPACE_TYPES }
@@ -67,6 +68,15 @@ class CommonSpace < ApplicationRecord
 
   def normalize_equipment
     self.equipment = Array(equipment).compact_blank
+  end
+
+  # Each free-text label only makes sense alongside its own "other" option. A
+  # PATCH that moves a selector away from "other" rarely bothers to clear the
+  # label too, so drop it here instead of leaving the stale text persisted.
+  def clear_other_labels_unless_selected
+    self.space_type_other = nil unless space_type == "other"
+    self.floor_type_other = nil unless floor_type == "other"
+    self.equipment_other = nil unless Array(equipment).include?("other")
   end
 
   def equipment_must_be_known

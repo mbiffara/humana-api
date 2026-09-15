@@ -121,6 +121,30 @@ RSpec.describe "Hotel Common Spaces API", type: :request do
       expect(body["equipment"]).to eq(%w[yoga_mats lighting])
     end
 
+    it "drops the free-text labels when their option stops being selected" do
+      create_space(name: "Carpa", space_type: "other", space_type_other: "Carpa",
+                   floor_type: "other", floor_type_other: "Arena",
+                   equipment: ["other"], equipment_other: "Telas")
+      expect(response).to have_http_status(:created)
+      created = response.parsed_body["common_space"]
+      expect(created).to include("space_type_other" => "Carpa", "floor_type_other" => "Arena",
+                                 "equipment_other" => "Telas")
+
+      patch "/api/v1/hotel/common_spaces/#{created['id']}",
+            params: { common_space: { space_type: "salon", floor_type: "wood",
+                                      equipment: ["wifi"] } }.to_json,
+            headers: auth_headers(owner)
+
+      expect(response).to have_http_status(:ok)
+      body = response.parsed_body["common_space"]
+      expect(body).to include("space_type" => "salon", "space_type_other" => nil,
+                              "floor_type" => "wood", "floor_type_other" => nil,
+                              "equipment" => ["wifi"], "equipment_other" => nil)
+
+      stored = CommonSpace.find(created["id"])
+      expect([stored.space_type_other, stored.floor_type_other, stored.equipment_other]).to all(be_nil)
+    end
+
     it "deletes the space and its images" do
       space.common_space_images.create!(image_url: "https://img.test/a.jpg", position: 0, is_primary: true)
 
