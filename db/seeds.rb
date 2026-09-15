@@ -272,6 +272,41 @@ if Rails.env.development? || Hotel.count.zero?
     end
   end
 
+  # Hotel 1 common spaces
+  salon = hotel1.common_spaces.find_or_create_by!(name: "Salón Mediterráneo") do |cs|
+    cs.space_type = "salon"
+    cs.capacity_seated = 80
+    cs.capacity_auditorium = 120
+    cs.capacity_banquet = 60
+    cs.capacity_workshop = 40
+    cs.area_sqm = 120
+    cs.floor_type = "wood"
+    cs.exclusive_for_groups = true
+    cs.equipment = %w[projector screen sound microphones wifi air_conditioning chairs tables lighting]
+    cs.position = 0
+  end
+  salon.common_space_images.find_or_create_by!(image_url: "https://images.unsplash.com/photo-1505373877841-8d25f7d46678?w=1200&q=80") do |i|
+    i.position = 0
+    i.is_primary = true
+    i.alt_text = "Salón Mediterráneo"
+  end
+
+  terraza = hotel1.common_spaces.find_or_create_by!(name: "Terraza del Mar") do |cs|
+    cs.space_type = "terrace"
+    cs.capacity_seated = 40
+    cs.capacity_yoga = 25
+    cs.area_sqm = 90
+    cs.floor_type = "ceramic"
+    cs.exclusive_for_groups = false
+    cs.equipment = %w[sound wifi chairs yoga_mats lighting]
+    cs.position = 1
+  end
+  terraza.common_space_images.find_or_create_by!(image_url: "https://images.unsplash.com/photo-1600607687920-4e2a09cf159d?w=1200&q=80") do |i|
+    i.position = 0
+    i.is_primary = true
+    i.alt_text = "Terraza del Mar"
+  end
+
   # Hotel 1 room types
   suite = hotel1.room_types.find_or_create_by!(name: "Ocean View Suite") do |rt|
     rt.category = "suite"
