@@ -9,5 +9,8 @@ FactoryBot.define do
     longitude { 1.4206 }
     certified { true }
     wellness_standard { "Global Wellness Institute" }
+    property_type { "hotel" }
+    environments { %w[beach island] }
+    state_region { "Islas Baleares" }
   end
 end
