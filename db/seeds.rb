@@ -279,13 +279,16 @@ if Rails.env.development? || Hotel.count.zero?
     rt.area_sqm = 55
     rt.price_per_night_cents = 35000
     rt.bed_type = "king"
-    rt.beds_count = 1
     rt.view_type = "ocean"
     rt.description = "Suite espaciosa con terraza privada y vista panorámica al mar Mediterráneo. Incluye sala de estar, minibar y amenities orgánicos."
     rt.amenities = %w[air_conditioning private_terrace king_bed minibar safe_box outdoor_shower organic_toiletries free_wifi smart_tv ocean_view]
     rt.status = "active"
     rt.currency = "USD"
   end
+  # beds_count is filled in after the block: on a database that was already
+  # seeded, find_or_create_by! returns the existing row without running it. The
+  # nil guard keeps a count a hotel set by hand from being overwritten.
+  suite.update!(beds_count: 1) if suite.beds_count.nil?
 
   deluxe = hotel1.room_types.find_or_create_by!(name: "Garden Deluxe") do |rt|
     rt.category = "superior"
@@ -293,13 +296,13 @@ if Rails.env.development? || Hotel.count.zero?
     rt.area_sqm = 38
     rt.price_per_night_cents = 22000
     rt.bed_type = "queen"
-    rt.beds_count = 1
     rt.view_type = "garden"
     rt.description = "Habitación deluxe con acceso directo al jardín de meditación. Decoración balinesa y baño con ducha de lluvia."
     rt.amenities = %w[air_conditioning garden_view queen_bed rainfall_shower organic_toiletries free_wifi closet desk]
     rt.status = "active"
     rt.currency = "USD"
   end
+  deluxe.update!(beds_count: 1) if deluxe.beds_count.nil?
 
   villa = hotel1.room_types.find_or_create_by!(name: "Private Villa") do |rt|
     rt.category = "villa"
@@ -307,13 +310,13 @@ if Rails.env.development? || Hotel.count.zero?
     rt.area_sqm = 90
     rt.price_per_night_cents = 58000
     rt.bed_type = "king"
-    rt.beds_count = 2
     rt.view_type = "ocean"
     rt.description = "Villa privada con piscina plunge, jardín propio y dos habitaciones. La experiencia más exclusiva del resort."
     rt.amenities = %w[air_conditioning private_terrace king_bed minibar safe_box private_plunge_pool outdoor_shower organic_toiletries bathtub free_wifi smart_tv bluetooth_speaker ocean_view hammock]
     rt.status = "active"
     rt.currency = "USD"
   end
+  villa.update!(beds_count: 2) if villa.beds_count.nil?
 
   # — Hotel 2: Casa Cenote (México) —
   hotel2_org = Organization.find_or_create_by!(name: "Casa Cenote Tulum") do |o|
@@ -407,13 +410,13 @@ if Rails.env.development? || Hotel.count.zero?
     rt.area_sqm = 45
     rt.price_per_night_cents = 28000
     rt.bed_type = "king"
-    rt.beds_count = 1
     rt.view_type = "garden"
     rt.description = "Suite elevada entre la selva maya con techo de palapa y terraza con hamaca. Baño abierto con ducha de lluvia rodeada de vegetación tropical."
     rt.amenities = %w[air_conditioning hammock king_bed rainfall_shower organic_toiletries free_wifi garden_view]
     rt.status = "active"
     rt.currency = "USD"
   end
+  jungle_suite.update!(beds_count: 1) if jungle_suite.beds_count.nil?
 
   cenote_room = hotel2.room_types.find_or_create_by!(name: "Cenote Room") do |rt|
     rt.category = "standard"
@@ -421,13 +424,13 @@ if Rails.env.development? || Hotel.count.zero?
     rt.area_sqm = 30
     rt.price_per_night_cents = 18000
     rt.bed_type = "queen"
-    rt.beds_count = 1
     rt.view_type = "garden"
     rt.description = "Habitación acogedora con acceso directo al cenote privado. Diseño minimalista inspirado en la arquitectura maya."
     rt.amenities = %w[air_conditioning pool_access rainfall_shower organic_toiletries free_wifi]
     rt.status = "active"
     rt.currency = "USD"
   end
+  cenote_room.update!(beds_count: 1) if cenote_room.beds_count.nil?
 
   # — Retreat 1: Wellness retreat at Shanti (España) —
   retreat1 = Retreat.find_or_initialize_by(name: "Despertar Interior: Retiro de Yoga & Meditación")
