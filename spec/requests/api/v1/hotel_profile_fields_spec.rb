@@ -374,6 +374,221 @@ RSpec.describe "Hotel profile fields", type: :request do
     end
   end
 
+  describe "property highlight" do
+    it "accepts 500 characters" do
+      patch_profile(highlight: "a" * 500)
+
+      expect(response).to have_http_status(:ok)
+      expect(hotel.reload.highlight.length).to eq(500)
+      expect(response.parsed_body["hotel"]["highlight"].length).to eq(500)
+    end
+
+    it "rejects 501 characters" do
+      patch_profile(highlight: "a" * 501)
+
+      expect(response).to have_http_status(:unprocessable_entity)
+      expect(hotel.reload.highlight).to be_nil
+    end
+
+    it "stores an empty string as nil" do
+      hotel.update!(highlight: "Something special")
+
+      patch_profile(highlight: "")
+
+      expect(response).to have_http_status(:ok)
+      expect(hotel.reload.highlight).to be_nil
+    end
+
+    # The pitch is what sells the property, so it is public. The verification
+    # block behind it is not.
+    it "is public, while the verification block is not" do
+      hotel.update!(highlight: "Clifftop yoga over the Mediterranean.")
+      hotel_org.update!(
+        legal_name: "Shanti Wellness S.L.",
+        tax_id: "B12345678",
+        ownership_document_url: "https://cdn.humana.global/documents/deed.pdf"
+      )
+
+      get "/api/v1/public/hotels/#{hotel.id}"
+
+      expect(response).to have_http_status(:ok)
+      body = response.parsed_body["hotel"]
+      expect(body["highlight"]).to eq("Clifftop yoga over the Mediterranean.")
+      expect(body).not_to have_key("legal_name")
+      expect(body).not_to have_key("tax_id")
+      expect(body).not_to have_key("ownership_document_url")
+      expect(body).not_to have_key("social_links")
+      expect(response.parsed_body).not_to have_key("organization")
+    end
+  end
+
+  describe "verification block" do
+    def patch_organization(attrs)
+      patch "/api/v1/hotel/profile",
+            params: { organization: attrs }.to_json,
+            headers: auth_headers(owner)
+    end
+
+    let(:verification) do
+      {
+        legal_name: "Shanti Wellness S.L.",
+        business_name: "Shanti Retreat Ibiza",
+        tax_id: "B12345678",
+        primary_contact: "Marta Ferrer",
+        primary_contact_role: "Directora General",
+        commercial_registration: "RM Ibiza, tomo 1234, folio 56",
+        phone: "+34 971 123 456",
+        contact_email: "legal@shantiretreat.com",
+        website: "https://shantiretreat.com",
+        social_links: { instagram: "https://instagram.com/shanti", facebook: "https://facebook.com/shanti" },
+        ownership_document_url: "https://cdn.humana.global/documents/deed.pdf",
+        authorization_declared: true
+      }
+    end
+
+    it "persists the whole block sent without any hotel data" do
+      patch_organization(verification)
+
+      expect(response).to have_http_status(:ok)
+      org = hotel_org.reload
+      expect(org.legal_name).to eq("Shanti Wellness S.L.")
+      expect(org.business_name).to eq("Shanti Retreat Ibiza")
+      expect(org.tax_id).to eq("B12345678")
+      expect(org.primary_contact_role).to eq("Directora General")
+      expect(org.commercial_registration).to eq("RM Ibiza, tomo 1234, folio 56")
+      expect(org.social_links).to eq(
+        "instagram" => "https://instagram.com/shanti",
+        "facebook" => "https://facebook.com/shanti"
+      )
+      expect(org.ownership_document_url).to eq("https://cdn.humana.global/documents/deed.pdf")
+      expect(org.authorization_declared_at).to be_present
+    end
+
+    it "serializes the block back on the same response" do
+      patch_organization(verification)
+
+      body = response.parsed_body["organization"]
+      expect(body["legal_name"]).to eq("Shanti Wellness S.L.")
+      expect(body["business_name"]).to eq("Shanti Retreat Ibiza")
+      expect(body["primary_contact_role"]).to eq("Directora General")
+      expect(body["commercial_registration"]).to eq("RM Ibiza, tomo 1234, folio 56")
+      expect(body["social_links"]).to eq(
+        "instagram" => "https://instagram.com/shanti",
+        "facebook" => "https://facebook.com/shanti"
+      )
+      expect(body["ownership_document_url"]).to eq("https://cdn.humana.global/documents/deed.pdf")
+      expect(body["authorization_declared_at"]).to be_present
+    end
+
+    it "keeps the original timestamp when the declaration is re-sent" do
+      patch_organization(authorization_declared: true)
+      first = hotel_org.reload.authorization_declared_at
+
+      patch_organization(authorization_declared: "true")
+
+      expect(hotel_org.reload.authorization_declared_at).to eq(first)
+    end
+
+    it "withdraws the declaration when it is unticked" do
+      patch_organization(authorization_declared: true)
+      expect(hotel_org.reload.authorization_declared_at).to be_present
+
+      patch_organization(authorization_declared: false)
+
+      expect(response).to have_http_status(:ok)
+      expect(hotel_org.reload.authorization_declared_at).to be_nil
+    end
+
+    it "leaves the declaration alone when the key is absent" do
+      hotel_org.update!(authorization_declared_at: 2.days.ago)
+      before = hotel_org.reload.authorization_declared_at
+
+      patch_organization(legal_name: "Shanti Wellness S.L.")
+
+      expect(hotel_org.reload.authorization_declared_at).to eq(before)
+    end
+
+    it "clears a field sent back empty" do
+      hotel_org.update!(legal_name: "Old S.L.")
+
+      patch_organization(legal_name: "")
+
+      expect(response).to have_http_status(:ok)
+      expect(hotel_org.reload.legal_name).to be_nil
+    end
+
+    it "rejects a social network it does not know" do
+      patch_organization(social_links: { myspace: "https://myspace.com/shanti" })
+
+      expect(response).to have_http_status(:unprocessable_entity)
+      expect(response.parsed_body["details"].join).to match(/unknown keys/i)
+      expect(hotel_org.reload.social_links).to eq({})
+    end
+
+    it "rejects a website without a scheme" do
+      patch_organization(website: "shantiretreat.com")
+
+      expect(response).to have_http_status(:unprocessable_entity)
+      expect(hotel_org.reload.website).to be_nil
+    end
+
+    it "drops a social link sent empty" do
+      patch_organization(social_links: { instagram: "https://instagram.com/shanti", facebook: "" })
+
+      expect(response).to have_http_status(:ok)
+      expect(hotel_org.reload.social_links).to eq("instagram" => "https://instagram.com/shanti")
+    end
+
+    it "is returned by GET profile together with the hotel highlight" do
+      hotel.update!(highlight: "Clifftop yoga over the Mediterranean.")
+      patch_organization(verification)
+
+      get "/api/v1/hotel/profile", headers: auth_headers(owner)
+
+      expect(response).to have_http_status(:ok)
+      expect(response.parsed_body["hotel"]["highlight"]).to eq("Clifftop yoga over the Mediterranean.")
+      org = response.parsed_body["organization"]
+      expect(org["business_name"]).to eq("Shanti Retreat Ibiza")
+      expect(org["primary_contact_role"]).to eq("Directora General")
+      expect(org["commercial_registration"]).to eq("RM Ibiza, tomo 1234, folio 56")
+      expect(org["social_links"]).to have_key("instagram")
+      expect(org["ownership_document_url"]).to be_present
+      expect(org["authorization_declared_at"]).to be_present
+    end
+
+    it "does not touch the bank block when only verification data is sent" do
+      patch_organization(legal_name: "Shanti Wellness S.L.")
+
+      expect(hotel_org.reload.bank_status).to eq("pending")
+    end
+  end
+
+  describe "verification sent before the hotel exists" do
+    let(:fresh_org) { create(:organization, :hotel) }
+    let(:fresh_owner) { create(:user, :owner, organization: fresh_org) }
+
+    it "is rejected because there is no property to attach it to" do
+      patch "/api/v1/hotel/profile",
+            params: { organization: { legal_name: "Shanti Wellness S.L." } }.to_json,
+            headers: auth_headers(fresh_owner)
+
+      expect(response).to have_http_status(:unprocessable_entity)
+      expect(response.parsed_body["details"]).to eq(["Hotel data is required"])
+      expect(fresh_org.reload.legal_name).to be_nil
+    end
+
+    it "is accepted alongside the hotel name that creates the property" do
+      patch "/api/v1/hotel/profile",
+            params: { hotel: { name: "Shanti Retreat" },
+                      organization: { legal_name: "Shanti Wellness S.L." } }.to_json,
+            headers: auth_headers(fresh_owner)
+
+      expect(response).to have_http_status(:ok)
+      expect(fresh_org.reload.legal_name).to eq("Shanti Wellness S.L.")
+      expect(fresh_org.hotels.first.name).to eq("Shanti Retreat")
+    end
+  end
+
   describe "admin preview" do
     let(:admin) { create(:user, :admin) }
 
@@ -404,6 +619,36 @@ RSpec.describe "Hotel profile fields", type: :request do
       expect(body["pet_dogs"]).to be(true)
       expect(body["group_min_guests"]).to eq(20)
       expect(body["group_max_guests"]).to eq(120)
+    end
+
+    it "carries the verification block on the organization" do
+      hotel_org.update!(
+        legal_name: "Shanti Wellness S.L.",
+        business_name: "Shanti Retreat Ibiza",
+        tax_id: "B12345678",
+        primary_contact: "Marta Ferrer",
+        primary_contact_role: "Directora General",
+        commercial_registration: "RM Ibiza, tomo 1234, folio 56",
+        website: "https://shantiretreat.com",
+        social_links: { "instagram" => "https://instagram.com/shanti" },
+        ownership_document_url: "https://cdn.humana.global/documents/deed.pdf",
+        authorization_declared_at: Time.current
+      )
+      hotel.update!(highlight: "Clifftop yoga over the Mediterranean.")
+
+      get "/api/v1/admin/hotels/#{hotel.id}", headers: auth_headers(admin)
+
+      expect(response).to have_http_status(:ok)
+      expect(response.parsed_body["hotel"]["highlight"]).to eq("Clifftop yoga over the Mediterranean.")
+      org = response.parsed_body["organization"]
+      expect(org["legal_name"]).to eq("Shanti Wellness S.L.")
+      expect(org["business_name"]).to eq("Shanti Retreat Ibiza")
+      expect(org["tax_id"]).to eq("B12345678")
+      expect(org["primary_contact_role"]).to eq("Directora General")
+      expect(org["commercial_registration"]).to eq("RM Ibiza, tomo 1234, folio 56")
+      expect(org["social_links"]).to eq("instagram" => "https://instagram.com/shanti")
+      expect(org["ownership_document_url"]).to eq("https://cdn.humana.global/documents/deed.pdf")
+      expect(org["authorization_declared_at"]).to be_present
     end
 
     it "still carries the fields the preview used to merge in by hand" do
