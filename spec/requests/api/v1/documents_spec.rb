@@ -47,10 +47,35 @@ RSpec.describe "Documents", type: :request do
       expect(response).to have_http_status(:forbidden)
     end
 
-    it "does not recognize a URL from somewhere else" do
-      request_link("https://evil.example.com/api/v1/documents/#{name}", owner)
+    it "does not recognize a URL whose path is not a document handle" do
+      request_link("https://evil.example.com/files/#{name}", owner)
 
       expect(response).to have_http_status(:not_found)
+    end
+
+    # Host and scheme drift over the life of a deployment; a handle stored
+    # before the drift still points at the same document.
+    it "still resolves a handle stored under another host and scheme" do
+      hotel_org.update!(ownership_document_url: "https://otro-host/api/v1/documents/#{name}")
+
+      request_link("https://otro-host/api/v1/documents/#{name}", owner)
+
+      expect(response).to have_http_status(:ok)
+      expect(response.parsed_body["url"]).to start_with("http://www.example.com/api/v1/documents/#{name}?token=")
+    end
+
+    it "matches the stored handle by name even when the caller asks with this host" do
+      hotel_org.update!(ownership_document_url: "https://otro-host/api/v1/documents/#{name}")
+
+      request_link(handle, owner)
+
+      expect(response).to have_http_status(:ok)
+    end
+
+    it "still refuses another organization's document across hosts" do
+      request_link("https://otro-host/api/v1/documents/#{name}", stranger)
+
+      expect(response).to have_http_status(:forbidden)
     end
 
     it "does not recognize a handle whose name is not ours" do

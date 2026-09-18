@@ -12,7 +12,12 @@ module Api
       # A stored document is always a UUID plus one of four extensions.
       # Anything else is not ours, and refusing it here is what keeps a name
       # from params out of a filesystem path.
-      NAME_FORMAT = /\A[0-9a-f-]{36}\.(pdf|jpg|png|webp)\z/
+      NAME_PATTERN = /[0-9a-f-]{36}\.(?:pdf|jpg|png|webp)/
+      NAME_FORMAT = /\A#{NAME_PATTERN}\z/
+      # The handle is identified by its path alone. Host and scheme drift —
+      # http to https, a proxy that forgets X-Forwarded-Proto, a new domain —
+      # and every URL stored before the drift would otherwise stop resolving.
+      PATH_FORMAT = %r{/api/v1/documents/(#{NAME_PATTERN})\z}
       CONTENT_TYPES = {
         "pdf" => "application/pdf",
         "jpg" => "image/jpeg",
@@ -31,7 +36,7 @@ module Api
       def link
         name = document_name(params[:url])
         return render_error("Document not found", :not_found) if name.nil?
-        return render_forbidden("You don't have access to this document") unless may_read?(params[:url])
+        return render_forbidden("You don't have access to this document") unless may_read?(name)
 
         token = verifier.generate({ name: name }, expires_in: LINK_TTL)
         render json: { url: "#{request.base_url}/api/v1/documents/#{name}?token=#{CGI.escape(token)}" }
@@ -60,21 +65,21 @@ module Api
         Rails.application.message_verifier(:documents)
       end
 
-      # The stored value is the exact handle the upload endpoint returned, so
-      # the comparison is exact too — no normalizing, no prefix matching.
+      # Only the path decides, so a handle keeps resolving after the host or
+      # the scheme changes. The name itself is still exact.
       def document_name(url)
-        prefix = "#{request.base_url}/api/v1/documents/"
-        value = url.to_s
-        return nil unless value.start_with?(prefix)
-
-        name = value.delete_prefix(prefix)
-        name.match?(NAME_FORMAT) ? name : nil
+        PATH_FORMAT.match(URI.parse(url.to_s).path.to_s)&.captures&.first
+      rescue URI::InvalidURIError
+        nil
       end
 
-      def may_read?(url)
+      # Ownership is a comparison between names, not between URLs, for the
+      # same reason: the organization may have stored its handle under a host
+      # this request no longer speaks.
+      def may_read?(name)
         return true if current_user&.platform_admin?
 
-        current_user&.organization&.ownership_document_url == url
+        document_name(current_user&.organization&.ownership_document_url) == name
       end
 
       def token_name(token)
