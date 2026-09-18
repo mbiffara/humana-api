@@ -37,5 +37,3 @@
 # Public uploads (user-generated)
 /public/uploads/*
 !/public/uploads/.keep
-/public/documents/*
-!/public/documents/.keep

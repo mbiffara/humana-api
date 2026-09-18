@@ -5,12 +5,21 @@ module Api
       # Paperwork (a deed, a power of attorney, a commercial registration)
       # usually arrives as a PDF, but a photo of the page counts too.
       DOCUMENT_TYPES = %w[application/pdf image/jpeg image/png image/webp].freeze
+      # The extension comes from the content type we just validated, never
+      # from the name the client chose — that name is attacker-controlled.
+      EXTENSIONS = {
+        "application/pdf" => "pdf",
+        "image/jpeg" => "jpg",
+        "image/png" => "png",
+        "image/webp" => "webp"
+      }.freeze
       MAX_SIZE = 10 * 1024 * 1024 # 10 MB
 
       # POST /api/v1/uploads
       # Content-Type: multipart/form-data
       # Body: file=<binary>, kind=document (optional)
-      # Returns: { url: "<s3 or local url>" }
+      # Returns: { url: "<public url>" } for images,
+      #          { url: "<host>/api/v1/documents/<name>" } for documents.
       def create
         file = params[:file]
         document = params[:kind] == "document"
@@ -29,16 +38,19 @@ module Api
           return render json: { error: "File too large. Maximum: 10 MB" }, status: :unprocessable_entity
         end
 
-        ext = File.extname(file.original_filename).downcase.presence || (document ? ".pdf" : ".jpg")
-        filename = "#{document ? 'documents' : 'uploads'}/#{SecureRandom.uuid}#{ext}"
+        name = "#{SecureRandom.uuid}.#{EXTENSIONS.fetch(file.content_type)}"
 
-        if s3_configured?
-          url = upload_to_s3(file, filename)
+        if document
+          store_document(file, name)
+          # Verification paperwork is private: it never gets a readable URL of
+          # its own, only this handle, which Api::V1::DocumentsController turns
+          # into a short-lived signed link for whoever may see it.
+          render json: { url: "#{request.base_url}/api/v1/documents/#{name}" }, status: :created
         else
-          url = upload_to_local(file, filename)
+          key = "uploads/#{name}"
+          url = s3_configured? ? upload_to_s3(file, key) : upload_to_local(file, key)
+          render json: { url: url }, status: :created
         end
-
-        render json: { url: url }, status: :created
       end
 
       private
@@ -47,25 +59,39 @@ module Api
         ENV["AWS_BUCKET"].present?
       end
 
-      def upload_to_s3(file, key)
+      # Out of the public bucket and out of public/ — a deed is readable only
+      # through a signed link, never by guessing a URL.
+      def store_document(file, name)
+        if s3_configured?
+          upload_to_s3(file, "documents/#{name}", acl: "private")
+        else
+          path = Rails.root.join("storage", "documents", name)
+          FileUtils.mkdir_p(path.dirname)
+          File.open(path, "wb") { |f| f.write(file.read) }
+        end
+      end
+
+      def upload_to_s3(file, key, acl: nil)
         require "aws-sdk-s3"
 
         bucket = ENV.fetch("AWS_BUCKET")
         region = ENV.fetch("AWS_REGION", "us-east-1")
 
         client = Aws::S3::Client.new(region: region)
-        client.put_object(
+        params = {
           bucket: bucket,
           key: key,
           body: file.read,
           content_type: file.content_type
-        )
+        }
+        params[:acl] = acl if acl
+        client.put_object(**params)
 
         "https://#{bucket}.s3.#{region}.amazonaws.com/#{key}"
       end
 
-      # Mirrors the S3 key under public/ so the returned URL carries the same
-      # prefix either way — images under uploads/, paperwork under documents/.
+      # Mirrors the S3 key under public/ so the returned URL is the same either
+      # way. Images only — documents never land here.
       def upload_to_local(file, key)
         path = Rails.root.join("public", key)
         FileUtils.mkdir_p(path.dirname)
