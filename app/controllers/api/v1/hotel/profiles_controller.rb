@@ -44,6 +44,10 @@ module Api
               current_organization.update!(bank_attrs)
             end
 
+            unless social_links_shape_ok?(org_params)
+              return render_unprocessable(["social_links must be an object"])
+            end
+
             # An empty value is still an answer — it clears the field — so the
             # presence of the key, not of a value, decides whether we write.
             verification = verification_attrs(org_params)
@@ -73,10 +77,10 @@ module Api
         # or represents it legally, who answers for it, and the document and
         # declaration that back the claim.
         #
-        # `social_links` is permitted as an open hash on purpose: filtering
-        # unknown networks here would silently drop them, and the property
-        # should hear about a typo. Organization#social_links_must_be_known
-        # rejects anything outside SOCIAL_LINK_KEYS with a 422.
+        # `social_links` is permitted as an open hash on purpose. Naming the
+        # known networks here would filter the rest out silently and answer
+        # 200, so the property would never learn about the typo; with the hash
+        # open, Organization#social_links_must_be_known answers 422 instead.
         def verification_attrs(org_params)
           attrs = org_params.permit(
             :legal_name, :business_name, :tax_id,
@@ -95,6 +99,15 @@ module Api
           end
 
           attrs
+        end
+
+        # `permit(social_links: {})` keeps a hash and drops anything else, so a
+        # string or a list would vanish without a word. Catch that shape here,
+        # where we can still say what was wrong.
+        def social_links_shape_ok?(org_params)
+          value = org_params[:social_links]
+
+          value.nil? || value.is_a?(ActionController::Parameters) || value.is_a?(Hash)
         end
 
         def hotel_params

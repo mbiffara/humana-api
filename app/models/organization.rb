@@ -34,14 +34,18 @@ class Organization < ApplicationRecord
             :commercial_registration,
             length: { maximum: 200 }, allow_blank: true
   validates :tax_id, length: { maximum: 60 }, allow_blank: true
-  # A whole http(s) link, not a bare domain — the app renders it as an anchor.
+  # A whole http(s) link, not a bare domain — the app renders these as anchors.
   # Anchored at both ends so nothing can ride along after a newline. Only on
   # change: an organization that stored a bare domain before this rule existed
   # must still be able to save everything else, including the name the hotel
   # profile keeps in sync.
-  validates :website, format: { with: %r{\Ahttps?://\S+\z}i },
+  LINK_FORMAT = %r{\Ahttps?://\S+\z}i
+
+  validates :website, format: { with: LINK_FORMAT },
                       allow_blank: true, if: :website_changed?
   validates :ownership_document_url, length: { maximum: 2000 }, allow_blank: true
+  validates :ownership_document_url, format: { with: LINK_FORMAT },
+                                     allow_blank: true, if: :ownership_document_url_changed?
   validate :social_links_must_be_known
 
   SPECIALTIES = %w[
@@ -106,5 +110,10 @@ class Organization < ApplicationRecord
 
     invalid = social_links.values.any? { |v| !v.is_a?(String) || v.length > 300 }
     errors.add(:social_links, "values must be strings up to 300 characters") if invalid
+    return if invalid
+
+    unless social_links.values.all? { |v| v.match?(LINK_FORMAT) }
+      errors.add(:social_links, "values must be http(s) links")
+    end
   end
 end
