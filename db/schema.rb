@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2026_09_16_100001) do
+ActiveRecord::Schema[8.0].define(version: 2026_09_18_120000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -252,6 +252,7 @@ ActiveRecord::Schema[8.0].define(version: 2026_09_16_100001) do
     t.integer "group_min_guests"
     t.integer "group_max_guests"
     t.string "video_url"
+    t.text "highlight"
     t.index ["country_code"], name: "index_hotels_on_country_code"
     t.index ["organization_id"], name: "index_hotels_on_organization_id"
   end
@@ -321,6 +322,12 @@ ActiveRecord::Schema[8.0].define(version: 2026_09_16_100001) do
     t.boolean "pending_changes", default: false, null: false
     t.text "review_feedback"
     t.datetime "review_feedback_at"
+    t.string "business_name"
+    t.string "primary_contact_role"
+    t.string "commercial_registration"
+    t.jsonb "social_links", default: {}, null: false
+    t.string "ownership_document_url"
+    t.datetime "authorization_declared_at"
     t.index ["assigned_office_id"], name: "index_organizations_on_assigned_office_id"
     t.index ["kind"], name: "index_organizations_on_kind"
     t.index ["status"], name: "index_organizations_on_status"
