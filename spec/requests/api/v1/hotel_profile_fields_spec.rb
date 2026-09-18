@@ -525,6 +525,35 @@ RSpec.describe "Hotel profile fields", type: :request do
       expect(hotel_org.reload.social_links).to eq({})
     end
 
+    it "rejects social_links sent as a string instead of an object" do
+      patch_organization(social_links: "https://instagram.com/shanti")
+
+      expect(response).to have_http_status(:unprocessable_entity)
+      expect(response.parsed_body["details"]).to eq(["social_links must be an object"])
+      expect(hotel_org.reload.social_links).to eq({})
+    end
+
+    it "rejects social_links sent as a list" do
+      patch_organization(social_links: ["https://instagram.com/shanti"])
+
+      expect(response).to have_http_status(:unprocessable_entity)
+      expect(response.parsed_body["details"]).to eq(["social_links must be an object"])
+    end
+
+    it "rejects a social link that is not an http(s) link" do
+      patch_organization(social_links: { instagram: "instagram.com/shanti" })
+
+      expect(response).to have_http_status(:unprocessable_entity)
+      expect(hotel_org.reload.social_links).to eq({})
+    end
+
+    it "rejects an ownership document that is not an http(s) link" do
+      patch_organization(ownership_document_url: "documents/deed.pdf")
+
+      expect(response).to have_http_status(:unprocessable_entity)
+      expect(hotel_org.reload.ownership_document_url).to be_nil
+    end
+
     it "rejects a website without a scheme" do
       patch_organization(website: "shantiretreat.com")
 
