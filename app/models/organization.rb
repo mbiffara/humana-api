@@ -12,9 +12,48 @@ class Organization < ApplicationRecord
   has_many :created_retreats, class_name: "Retreat", foreign_key: :created_by_organization_id, dependent: :nullify
   belongs_to :assigned_office, class_name: "Organization", optional: true
 
+  # The only social networks the verification form offers. "other" is the
+  # catch-all for a link that fits none of them.
+  SOCIAL_LINK_KEYS = %w[instagram facebook linkedin tiktok youtube other].freeze
+
+  # Verification text the form clears by posting an empty string — store nil
+  # so a cleared field reads as absent rather than as an empty answer.
+  BLANK_TO_NIL_FIELDS = %i[
+    legal_name business_name tax_id primary_contact primary_contact_role
+    commercial_registration website ownership_document_url
+  ].freeze
+
+  before_validation :nullify_blank_verification_text
+
   validates :name, presence: true
   validates :kind, inclusion: { in: KINDS }
   validates :status, inclusion: { in: STATUSES }
+
+  # Verification block (LOG-157): who legally owns or represents the property.
+  validates :legal_name, :business_name, :primary_contact, :primary_contact_role,
+            :commercial_registration,
+            length: { maximum: 200 }, allow_blank: true
+  validates :tax_id, length: { maximum: 60 }, allow_blank: true
+  # A whole http(s) link, not a bare domain — the app renders these as anchors.
+  # Anchored at both ends so nothing can ride along after a newline. Only on
+  # change: an organization that stored a bare domain before this rule existed
+  # must still be able to save everything else, including the name the hotel
+  # profile keeps in sync.
+  LINK_FORMAT = %r{\Ahttps?://\S+\z}i
+
+  validates :website, format: { with: LINK_FORMAT },
+                      allow_blank: true, if: :website_changed?
+  validates :ownership_document_url, length: { maximum: 2000 }, allow_blank: true
+  validates :ownership_document_url, format: { with: LINK_FORMAT },
+                                     allow_blank: true, if: :ownership_document_url_changed?
+  validate :ownership_document_must_be_ours, if: :ownership_document_url_changed?
+
+  # A handle minted by Api::V1::UploadsController for a private document. The
+  # organization id in the path is the one that uploaded it — so an
+  # organization may only point at its own. (Kept here, and not read off the
+  # controller, so the rule survives whichever endpoint does the writing.)
+  DOCUMENT_HANDLE_PATH = %r{/api/v1/documents/(\d+)/[0-9a-f-]{36}\.(?:pdf|jpg|png|webp)\z}
+  validate :social_links_must_be_known
 
   SPECIALTIES = %w[
     wellness corporate adventure spiritual yoga
@@ -50,5 +89,53 @@ class Organization < ApplicationRecord
 
   def onboarding_completed?
     onboarding_completed_at.present?
+  end
+
+  private
+
+  def nullify_blank_verification_text
+    BLANK_TO_NIL_FIELDS.each do |field|
+      value = self[field]
+      self[field] = nil if value.is_a?(String) && value.strip.empty?
+    end
+
+    return unless social_links.is_a?(Hash)
+
+    self.social_links = social_links.reject { |_k, v| v.nil? || (v.is_a?(String) && v.strip.empty?) }
+  end
+
+  # `ownership_document_url` is hotel-supplied, so without this an
+  # organization that guessed another one's document id could store that
+  # handle and ask for a signed link to it. An ordinary external link — a
+  # notary's site, a drive share — is none of our business and passes.
+  def ownership_document_must_be_ours
+    return if ownership_document_url.blank?
+
+    match = DOCUMENT_HANDLE_PATH.match(URI.parse(ownership_document_url).path.to_s)
+    return if match.nil? || match[1].to_i == id
+
+    errors.add(:base, "ownership_document_url must point to a document of this organization")
+  rescue URI::InvalidURIError
+    nil
+  end
+
+  # A flat { network => url } hash, limited to the networks the form offers so
+  # the app can render each one with its own icon.
+  def social_links_must_be_known
+    unless social_links.is_a?(Hash)
+      errors.add(:social_links, "must be an object")
+      return
+    end
+
+    unknown = social_links.keys.map(&:to_s) - SOCIAL_LINK_KEYS
+    errors.add(:social_links, "contains unknown keys") if unknown.any?
+
+    invalid = social_links.values.any? { |v| !v.is_a?(String) || v.length > 300 }
+    errors.add(:social_links, "values must be strings up to 300 characters") if invalid
+    return if invalid
+
+    unless social_links.values.all? { |v| v.match?(LINK_FORMAT) }
+      errors.add(:social_links, "values must be http(s) links")
+    end
   end
 end

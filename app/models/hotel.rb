@@ -31,7 +31,7 @@ class Hotel < ApplicationRecord
     property_type property_type_other
     pet_size_restriction_notes pet_extra_cost_notes
     website phone contact_email postal_code address description
-    video_url
+    video_url highlight
   ].freeze
 
   before_validation :nullify_blank_optional_text
@@ -50,6 +50,10 @@ class Hotel < ApplicationRecord
   validates :airport_time_min, numericality: { only_integer: true, greater_than_or_equal_to: 0 }, allow_nil: true
   validates :distance_to_center_km, numericality: { greater_than_or_equal_to: 0 }, allow_nil: true
   validates :airport_transfer, inclusion: { in: AIRPORT_TRANSFERS }, allow_nil: true
+
+  # "What makes your property special?" — a short pitch the onboarding form
+  # caps at 500 characters.
+  validates :highlight, length: { maximum: 500 }, allow_blank: true
 
   # Property video
   validates :video_url, length: { maximum: 500 }, allow_nil: true

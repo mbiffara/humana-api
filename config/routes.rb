@@ -162,6 +162,13 @@ Rails.application.routes.draw do
       # File uploads (any authenticated user)
       resources :uploads, only: [:create]
 
+      # Private verification paperwork. `link` needs a JWT and mints a
+      # short-lived signature; the download itself travels by that signature
+      # alone, because a browser tab carries no Authorization header.
+      post "documents/link", to: "documents#link"
+      get "documents/:org_id/:name", to: "documents#show", as: :document,
+                                    constraints: { org_id: /\d+/, name: %r{[^/]+} }
+
       # Discovery
       resources :experiences, only: %i[index show]
       get "coverage", to: "coverage#index"

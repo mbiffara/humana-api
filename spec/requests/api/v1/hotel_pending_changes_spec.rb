@@ -18,6 +18,18 @@ RSpec.describe "Hotel pending changes", type: :request do
     expect(hotel_org.reload.pending_changes).to be(true)
   end
 
+  # The verification block (LOG-157) is property content too: editing it after
+  # submitting withdraws the submission just like editing the hotel does.
+  it "flags pending changes when only the organization verification changes" do
+    patch "/api/v1/hotel/profile",
+          params: { organization: { legal_name: "Shanti Wellness S.L." } }.to_json,
+          headers: auth_headers(owner)
+
+    expect(response).to have_http_status(:ok)
+    expect(hotel_org.reload.legal_name).to eq("Shanti Wellness S.L.")
+    expect(hotel_org.pending_changes).to be(true)
+  end
+
   it "does not flag before the first submission" do
     hotel_org.update!(onboarding_completed_at: nil)
 
