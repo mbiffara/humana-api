@@ -42,6 +42,15 @@ module ApiSerializers
         bank_currency: org.bank_currency,
         bank_country: org.bank_country,
         bank_status: org.bank_status,
+        # Verification block (LOG-157). Onboarding-only: it identifies the
+        # people and paperwork behind the property and never reaches the
+        # public serializer.
+        business_name: org.business_name,
+        primary_contact_role: org.primary_contact_role,
+        commercial_registration: org.commercial_registration,
+        social_links: org.social_links || {},
+        ownership_document_url: org.ownership_document_url,
+        authorization_declared_at: org.authorization_declared_at&.iso8601,
       )
     end
 
@@ -81,6 +90,7 @@ module ApiSerializers
       wellness_standard: hotel.wellness_standard,
       cover_image_url: hotel.cover_image&.image_url,
       video_url: hotel.video_url,
+      highlight: hotel.highlight,
       state_region: hotel.state_region,
       property_type: hotel.property_type,
       property_type_other: hotel.property_type_other,

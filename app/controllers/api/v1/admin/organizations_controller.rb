@@ -61,11 +61,23 @@ module Api
           )
         end
 
-        # Extends the base serializer with user_count for admin views.
+        # Extends the base serializer with user_count and the verification
+        # block admins read when approving a property (LOG-157).
         def serialize_org(org)
           ApiSerializers.organization(org).merge(
             contact_email: org.contact_email,
-            user_count: org.users.count
+            user_count: org.users.count,
+            legal_name: org.legal_name,
+            business_name: org.business_name,
+            tax_id: org.tax_id,
+            primary_contact: org.primary_contact,
+            primary_contact_role: org.primary_contact_role,
+            commercial_registration: org.commercial_registration,
+            phone: org.phone,
+            website: org.website,
+            social_links: org.social_links || {},
+            ownership_document_url: org.ownership_document_url,
+            authorization_declared_at: org.authorization_declared_at&.iso8601
           )
         end
       end

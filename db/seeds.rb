@@ -232,6 +232,7 @@ if Rails.env.development? || Hotel.count.zero?
     h.certified = true
     h.wellness_standard = "premium"
     h.description = "Un santuario de bienestar en el corazón de Ibiza, rodeado de naturaleza mediterránea. Nuestro resort ofrece programas de wellness integrales que combinan yoga, meditación, nutrición consciente y terapias holísticas."
+    h.highlight = "Un acantilado privado sobre el Mediterráneo donde cada retiro amanece con yoga frente al mar."
     h.check_in_time = "15:00"
     h.check_out_time = "11:00"
     h.phone = "+34 971 123 456"
@@ -402,6 +403,7 @@ if Rails.env.development? || Hotel.count.zero?
     h.certified = true
     h.wellness_standard = "holistic"
     h.description = "Boutique eco-hotel junto al cenote sagrado de Tulum. Arquitectura maya contemporánea, cocina de raíz y ceremonias ancestrales. Un puente entre la sabiduría ancestral y el bienestar moderno."
+    h.highlight = "Un cenote sagrado de uso exclusivo para el grupo y ceremonias guiadas por abuelas mayas de la comunidad."
     h.check_in_time = "14:00"
     h.check_out_time = "12:00"
     h.phone = "+52 984 871 2345"
