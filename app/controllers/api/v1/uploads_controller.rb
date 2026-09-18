@@ -41,11 +41,15 @@ module Api
         name = "#{SecureRandom.uuid}.#{EXTENSIONS.fetch(file.content_type)}"
 
         if document
-          store_document(file, name)
+          # The organization id is part of the path, so who may read the
+          # document is settled by where it lives — not by a field the hotel
+          # itself writes.
+          org_id = current_organization.id
+          store_document(file, org_id, name)
           # Verification paperwork is private: it never gets a readable URL of
           # its own, only this handle, which Api::V1::DocumentsController turns
           # into a short-lived signed link for whoever may see it.
-          render json: { url: "#{request.base_url}/api/v1/documents/#{name}" }, status: :created
+          render json: { url: "#{request.base_url}/api/v1/documents/#{org_id}/#{name}" }, status: :created
         else
           key = "uploads/#{name}"
           url = s3_configured? ? upload_to_s3(file, key) : upload_to_local(file, key)
@@ -61,11 +65,11 @@ module Api
 
       # Out of the public bucket and out of public/ — a deed is readable only
       # through a signed link, never by guessing a URL.
-      def store_document(file, name)
+      def store_document(file, org_id, name)
         if s3_configured?
-          upload_to_s3(file, "documents/#{name}", acl: "private")
+          upload_to_s3(file, "documents/#{org_id}/#{name}", acl: "private")
         else
-          path = Rails.root.join("storage", "documents", name)
+          path = Rails.root.join("storage", "documents", org_id.to_s, name)
           FileUtils.mkdir_p(path.dirname)
           File.open(path, "wb") { |f| f.write(file.read) }
         end

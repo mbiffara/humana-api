@@ -46,6 +46,13 @@ class Organization < ApplicationRecord
   validates :ownership_document_url, length: { maximum: 2000 }, allow_blank: true
   validates :ownership_document_url, format: { with: LINK_FORMAT },
                                      allow_blank: true, if: :ownership_document_url_changed?
+  validate :ownership_document_must_be_ours, if: :ownership_document_url_changed?
+
+  # A handle minted by Api::V1::UploadsController for a private document. The
+  # organization id in the path is the one that uploaded it — so an
+  # organization may only point at its own. (Kept here, and not read off the
+  # controller, so the rule survives whichever endpoint does the writing.)
+  DOCUMENT_HANDLE_PATH = %r{/api/v1/documents/(\d+)/[0-9a-f-]{36}\.(?:pdf|jpg|png|webp)\z}
   validate :social_links_must_be_known
 
   SPECIALTIES = %w[
@@ -95,6 +102,21 @@ class Organization < ApplicationRecord
     return unless social_links.is_a?(Hash)
 
     self.social_links = social_links.reject { |_k, v| v.nil? || (v.is_a?(String) && v.strip.empty?) }
+  end
+
+  # `ownership_document_url` is hotel-supplied, so without this an
+  # organization that guessed another one's document id could store that
+  # handle and ask for a signed link to it. An ordinary external link — a
+  # notary's site, a drive share — is none of our business and passes.
+  def ownership_document_must_be_ours
+    return if ownership_document_url.blank?
+
+    match = DOCUMENT_HANDLE_PATH.match(URI.parse(ownership_document_url).path.to_s)
+    return if match.nil? || match[1].to_i == id
+
+    errors.add(:base, "ownership_document_url must point to a document of this organization")
+  rescue URI::InvalidURIError
+    nil
   end
 
   # A flat { network => url } hash, limited to the networks the form offers so

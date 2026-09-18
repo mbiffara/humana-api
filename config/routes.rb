@@ -166,8 +166,8 @@ Rails.application.routes.draw do
       # short-lived signature; the download itself travels by that signature
       # alone, because a browser tab carries no Authorization header.
       post "documents/link", to: "documents#link"
-      get "documents/:name", to: "documents#show", as: :document,
-                             constraints: { name: %r{[^/]+} }
+      get "documents/:org_id/:name", to: "documents#show", as: :document,
+                                    constraints: { org_id: /\d+/, name: %r{[^/]+} }
 
       # Discovery
       resources :experiences, only: %i[index show]

@@ -23,7 +23,8 @@ RSpec.describe "Uploads", type: :request do
 
   def upload_headers = auth_headers(owner).except("Content-Type")
 
-  def document_name(url) = url.split("/api/v1/documents/").last
+  def document_path(url) = url.split("/api/v1/documents/").last
+  def document_name(url) = document_path(url).split("/").last
 
   before { @tmp_paths = [] }
 
@@ -44,15 +45,22 @@ RSpec.describe "Uploads", type: :request do
 
     expect(response).to have_http_status(:created)
     url = response.parsed_body["url"]
-    expect(url).to start_with("http://www.example.com/api/v1/documents/")
+    expect(url).to start_with("http://www.example.com/api/v1/documents/#{hotel_org.id}/")
     expect(document_name(url)).to match(/\A[0-9a-f-]{36}\.pdf\z/)
+  end
+
+  it "files the document under the organization that uploaded it" do
+    post "/api/v1/uploads", params: { file: pdf_file, kind: "document" }, headers: upload_headers
+
+    name = document_name(response.parsed_body["url"])
+    expect(document_path(response.parsed_body["url"])).to eq("#{hotel_org.id}/#{name}")
+    expect(File).to exist(Rails.root.join("storage", "documents", hotel_org.id.to_s, name))
   end
 
   it "stores the document outside the public tree" do
     post "/api/v1/uploads", params: { file: pdf_file, kind: "document" }, headers: upload_headers
 
     name = document_name(response.parsed_body["url"])
-    expect(File).to exist(Rails.root.join("storage", "documents", name))
     expect(File).not_to exist(Rails.root.join("public", "documents", name))
     expect(File).not_to exist(Rails.root.join("public", "uploads", name))
   end

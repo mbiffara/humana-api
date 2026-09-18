@@ -9,15 +9,16 @@ module Api
     # tab, where no Authorization header travels — so the signature is the
     # whole proof, and it expires in minutes.
     class DocumentsController < ApplicationController
-      # A stored document is always a UUID plus one of four extensions.
-      # Anything else is not ours, and refusing it here is what keeps a name
-      # from params out of a filesystem path.
+      # A stored document is always a UUID plus one of four extensions, filed
+      # under the id of the organization that uploaded it. Refusing anything
+      # else here is what keeps a name from params out of a filesystem path.
       NAME_PATTERN = /[0-9a-f-]{36}\.(?:pdf|jpg|png|webp)/
       NAME_FORMAT = /\A#{NAME_PATTERN}\z/
+      ORG_ID_FORMAT = /\A\d+\z/
       # The handle is identified by its path alone. Host and scheme drift —
       # http to https, a proxy that forgets X-Forwarded-Proto, a new domain —
       # and every URL stored before the drift would otherwise stop resolving.
-      PATH_FORMAT = %r{/api/v1/documents/(#{NAME_PATTERN})\z}
+      PATH_FORMAT = %r{/api/v1/documents/(\d+)/(#{NAME_PATTERN})\z}
       CONTENT_TYPES = {
         "pdf" => "application/pdf",
         "jpg" => "image/jpeg",
@@ -31,31 +32,35 @@ module Api
       before_action :require_active_user!, only: :link
 
       # POST /api/v1/documents/link
-      # Body: { url: "<host>/api/v1/documents/<name>" }
+      # Body: { url: "<host>/api/v1/documents/<org_id>/<name>" }
       # Returns: { url: "<same>?token=<signature>" }
       def link
-        name = document_name(params[:url])
+        org_id, name = handle_parts(params[:url])
         return render_error("Document not found", :not_found) if name.nil?
-        return render_forbidden("You don't have access to this document") unless may_read?(name)
+        return render_forbidden("You don't have access to this document") unless may_read?(org_id)
 
-        token = verifier.generate({ name: name }, expires_in: LINK_TTL)
-        render json: { url: "#{request.base_url}/api/v1/documents/#{name}?token=#{CGI.escape(token)}" }
+        token = verifier.generate({ org_id: org_id, name: name }, expires_in: LINK_TTL)
+        render json: {
+          url: "#{request.base_url}/api/v1/documents/#{org_id}/#{name}?token=#{CGI.escape(token)}"
+        }
       end
 
-      # GET /api/v1/documents/:name?token=<signature>
+      # GET /api/v1/documents/:org_id/:name?token=<signature>
       def show
-        match = NAME_FORMAT.match(params[:name].to_s)
-        return render_error("Document not found", :not_found) if match.nil?
+        org_id = params[:org_id].to_s
+        name = NAME_FORMAT.match(params[:name].to_s)&.to_s
+        return render_error("Document not found", :not_found) if name.nil? || !org_id.match?(ORG_ID_FORMAT)
 
-        name = match[0]
-        return render_forbidden("This link is no longer valid") unless token_name(params[:token]) == name
+        # The signature names the exact document. A token minted for one
+        # organization cannot be pointed at another one's file.
+        return render_forbidden("This link is no longer valid") unless signed_for?(org_id, name)
 
         response.headers["Cache-Control"] = "private, no-store"
 
         if s3_configured?
-          redirect_to presigned_url(name), allow_other_host: true
+          redirect_to presigned_url(org_id, name), allow_other_host: true
         else
-          serve_local(name)
+          serve_local(org_id, name)
         end
       end
 
@@ -66,35 +71,36 @@ module Api
       end
 
       # Only the path decides, so a handle keeps resolving after the host or
-      # the scheme changes. The name itself is still exact.
-      def document_name(url)
-        PATH_FORMAT.match(URI.parse(url.to_s).path.to_s)&.captures&.first
+      # the scheme changes.
+      def handle_parts(url)
+        PATH_FORMAT.match(URI.parse(url.to_s).path.to_s)&.captures
       rescue URI::InvalidURIError
         nil
       end
 
-      # Ownership is a comparison between names, not between URLs, for the
-      # same reason: the organization may have stored its handle under a host
-      # this request no longer speaks.
-      def may_read?(name)
+      # Ownership comes from where the document lives, not from a field the
+      # hotel writes: `ownership_document_url` is hotel-supplied, so trusting
+      # it would let anyone who guesses a UUID claim someone else's paperwork.
+      def may_read?(org_id)
         return true if current_user&.platform_admin?
 
-        document_name(current_user&.organization&.ownership_document_url) == name
+        org_id.to_i == current_user&.organization_id
       end
 
-      def token_name(token)
-        payload = verifier.verified(token.to_s)
-        return nil unless payload.is_a?(Hash)
+      def signed_for?(org_id, name)
+        payload = verifier.verified(params[:token].to_s)
+        return false unless payload.is_a?(Hash)
 
-        payload.with_indifferent_access[:name]
+        payload = payload.with_indifferent_access
+        payload[:org_id].to_s == org_id && payload[:name] == name
       end
 
       def s3_configured?
         ENV["AWS_BUCKET"].present?
       end
 
-      def serve_local(name)
-        path = File.join(document_root, name)
+      def serve_local(org_id, name)
+        path = File.join(document_root, org_id, name)
         return render_error("Document not found", :not_found) unless File.exist?(path)
 
         send_file path, type: CONTENT_TYPES.fetch(name.split(".").last), disposition: "inline"
@@ -104,13 +110,13 @@ module Api
         Rails.root.join("storage", "documents").to_s
       end
 
-      def presigned_url(name)
+      def presigned_url(org_id, name)
         require "aws-sdk-s3"
 
         Aws::S3::Presigner.new(client: Aws::S3::Client.new(region: ENV.fetch("AWS_REGION", "us-east-1")))
                           .presigned_url(:get_object,
                                          bucket: ENV.fetch("AWS_BUCKET"),
-                                         key: "documents/#{name}",
+                                         key: "documents/#{org_id}/#{name}",
                                          expires_in: S3_LINK_TTL.to_i)
       end
     end

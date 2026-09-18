@@ -547,6 +547,30 @@ RSpec.describe "Hotel profile fields", type: :request do
       expect(hotel_org.reload.social_links).to eq({})
     end
 
+    # The handle carries the organization id, so claiming someone else's is
+    # refused here rather than at read time.
+    it "rejects an ownership document that belongs to another organization" do
+      other_org = create(:organization, :hotel, name: "Another Hotel")
+
+      patch_organization(
+        ownership_document_url: "http://www.example.com/api/v1/documents/#{other_org.id}/#{SecureRandom.uuid}.pdf"
+      )
+
+      expect(response).to have_http_status(:unprocessable_entity)
+      expect(response.parsed_body["details"])
+        .to eq(["ownership_document_url must point to a document of this organization"])
+      expect(hotel_org.reload.ownership_document_url).to be_nil
+    end
+
+    it "accepts its own handle" do
+      handle = "http://www.example.com/api/v1/documents/#{hotel_org.id}/#{SecureRandom.uuid}.pdf"
+
+      patch_organization(ownership_document_url: handle)
+
+      expect(response).to have_http_status(:ok)
+      expect(hotel_org.reload.ownership_document_url).to eq(handle)
+    end
+
     it "rejects an ownership document that is not an http(s) link" do
       patch_organization(ownership_document_url: "documents/deed.pdf")
 
