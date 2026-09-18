@@ -532,6 +532,41 @@ RSpec.describe "Hotel profile fields", type: :request do
       expect(hotel_org.reload.website).to be_nil
     end
 
+    # Organizations onboarded before the format rule existed keep a bare
+    # domain. That stops them from changing the website, not from saving.
+    context "with a bare domain stored before the rule existed" do
+      before { hotel_org.update_column(:website, "old-domain.com") }
+
+      it "still accepts an edit to another field" do
+        patch_organization(legal_name: "Shanti Wellness S.L.")
+
+        expect(response).to have_http_status(:ok)
+        expect(hotel_org.reload.legal_name).to eq("Shanti Wellness S.L.")
+        expect(hotel_org.website).to eq("old-domain.com")
+      end
+
+      it "still accepts an edit that only changes the hotel name" do
+        patch_profile(name: "Shanti Retreat Renamed")
+
+        expect(response).to have_http_status(:ok)
+        expect(hotel_org.reload.name).to eq("Shanti Retreat Renamed")
+      end
+
+      it "still rejects moving the website to another scheme-less domain" do
+        patch_organization(website: "example.com")
+
+        expect(response).to have_http_status(:unprocessable_entity)
+        expect(hotel_org.reload.website).to eq("old-domain.com")
+      end
+
+      it "accepts a proper link as the replacement" do
+        patch_organization(website: "https://example.com")
+
+        expect(response).to have_http_status(:ok)
+        expect(hotel_org.reload.website).to eq("https://example.com")
+      end
+    end
+
     it "drops a social link sent empty" do
       patch_organization(social_links: { instagram: "https://instagram.com/shanti", facebook: "" })
 
