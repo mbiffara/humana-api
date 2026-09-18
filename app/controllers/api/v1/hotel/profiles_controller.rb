@@ -23,35 +23,44 @@ module Api
             return render_unprocessable(["Hotel data is required"])
           end
 
+          # Bank details and verification block travel nested under the
+          # organization key. The one check the permit cannot make comes first,
+          # while nothing has been written yet.
+          org_params = params[:organization].present? ? params.require(:organization) : nil
+          if org_params && !social_links_shape_ok?(org_params)
+            return render_unprocessable(["social_links must be an object"])
+          end
+
           hotel = current_hotel || current_organization.hotels.build
-          hotel.assign_attributes(hotel_params)
-          hotel.save!
-          # Keep organization name in sync with hotel name
-          current_organization.update!(name: hotel.name) if hotel.name.present?
-          current_user.update!(name: params[:user_name]) if params[:user_name].present?
-          current_user.update!(phone: params[:user_phone]) if params[:user_phone].present?
 
-          # Bank details and verification block (nested under organization key)
-          if params[:organization].present?
-            org_params = params.require(:organization)
+          # One form, one save. A property that fails on the verification block
+          # must not be left with half of its profile rewritten — and a 422
+          # leaves the submission untouched, so `flag_pending_changes` stays
+          # honest about what is actually published.
+          ActiveRecord::Base.transaction do
+            hotel.assign_attributes(hotel_params)
+            hotel.save!
+            # Keep organization name in sync with hotel name
+            current_organization.update!(name: hotel.name) if hotel.name.present?
+            current_user.update!(name: params[:user_name]) if params[:user_name].present?
+            current_user.update!(phone: params[:user_phone]) if params[:user_phone].present?
 
-            bank_attrs = org_params.permit(
-              :bank_account_holder, :bank_iban, :bank_swift,
-              :bank_currency, :bank_country
-            )
-            if bank_attrs.values.any?(&:present?)
-              bank_attrs[:bank_status] = "configured"
-              current_organization.update!(bank_attrs)
+            if org_params
+              bank_attrs = org_params.permit(
+                :bank_account_holder, :bank_iban, :bank_swift,
+                :bank_currency, :bank_country
+              )
+              if bank_attrs.values.any?(&:present?)
+                bank_attrs[:bank_status] = "configured"
+                current_organization.update!(bank_attrs)
+              end
+
+              # An empty value is still an answer — it clears the field — so
+              # the presence of the key, not of a value, decides whether we
+              # write.
+              verification = verification_attrs(org_params)
+              current_organization.update!(verification) if verification.keys.any?
             end
-
-            unless social_links_shape_ok?(org_params)
-              return render_unprocessable(["social_links must be an object"])
-            end
-
-            # An empty value is still an answer — it clears the field — so the
-            # presence of the key, not of a value, decides whether we write.
-            verification = verification_attrs(org_params)
-            current_organization.update!(verification) if verification.keys.any?
           end
 
           render json: {

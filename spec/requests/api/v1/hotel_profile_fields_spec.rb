@@ -651,6 +651,58 @@ RSpec.describe "Hotel profile fields", type: :request do
     end
   end
 
+  # One form, one save: a request that fails anywhere leaves nothing behind.
+  describe "atomicity of the profile update" do
+    def patch_both(hotel_attrs, org_attrs)
+      patch "/api/v1/hotel/profile",
+            params: { hotel: hotel_attrs, organization: org_attrs }.to_json,
+            headers: auth_headers(owner)
+    end
+
+    it "does not rename the hotel when social_links has the wrong shape" do
+      patch_both({ name: "Renamed Hotel" }, { social_links: "https://instagram.com/shanti" })
+
+      expect(response).to have_http_status(:unprocessable_entity)
+      expect(hotel.reload.name).not_to eq("Renamed Hotel")
+      expect(hotel_org.reload.name).not_to eq("Renamed Hotel")
+    end
+
+    it "rolls the hotel back when the verification block is invalid" do
+      hotel_name = hotel.name
+      org_name = hotel_org.name
+
+      patch_both({ name: "Renamed Hotel" }, { social_links: { myspace: "https://myspace.com/shanti" } })
+
+      expect(response).to have_http_status(:unprocessable_entity)
+      expect(hotel.reload.name).to eq(hotel_name)
+      expect(hotel_org.reload.name).to eq(org_name)
+    end
+
+    it "rolls the bank block back with it" do
+      hotel_name = hotel.name
+
+      patch_both(
+        { name: "Renamed Hotel" },
+        { bank_iban: "ES9121000418450200051332", website: "not-a-link" }
+      )
+
+      expect(response).to have_http_status(:unprocessable_entity)
+      expect(hotel.reload.name).to eq(hotel_name)
+      hotel_org.reload
+      expect(hotel_org.bank_iban).to be_nil
+      expect(hotel_org.bank_status).to eq("pending")
+    end
+
+    it "does not withdraw a published submission when the request fails" do
+      hotel_org.update!(status: "pending", onboarding_completed_at: 1.day.ago, pending_changes: false)
+
+      patch_both({ name: "Renamed Hotel" }, { social_links: { myspace: "https://myspace.com/x" } })
+
+      expect(response).to have_http_status(:unprocessable_entity)
+      expect(hotel_org.reload.pending_changes).to be(false)
+    end
+  end
+
   describe "verification sent before the hotel exists" do
     let(:fresh_org) { create(:organization, :hotel) }
     let(:fresh_owner) { create(:user, :owner, organization: fresh_org) }
