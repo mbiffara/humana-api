@@ -34,7 +34,9 @@ class Organization < ApplicationRecord
             :commercial_registration,
             length: { maximum: 200 }, allow_blank: true
   validates :tax_id, length: { maximum: 60 }, allow_blank: true
-  validates :website, format: { with: %r{\Ahttps?://}i }, allow_blank: true
+  # A whole http(s) link, not a bare domain — the app renders it as an anchor.
+  # Anchored at both ends so nothing can ride along after a newline.
+  validates :website, format: { with: %r{\Ahttps?://\S+\z}i }, allow_blank: true
   validates :ownership_document_url, length: { maximum: 2000 }, allow_blank: true
   validate :social_links_must_be_known
 
