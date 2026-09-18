@@ -12,6 +12,7 @@ RSpec.describe "Documents", type: :request do
   let(:other_org) { create(:organization, :hotel, name: "Another Hotel") }
   let(:stranger) { create(:user, :owner, organization: other_org) }
   let(:admin) { create(:user, :admin) }
+  let(:member) { create(:user, organization: hotel_org) }
 
   let(:name) { "#{SecureRandom.uuid}.pdf" }
   let(:handle) { "http://www.example.com/api/v1/documents/#{hotel_org.id}/#{name}" }
@@ -41,6 +42,14 @@ RSpec.describe "Documents", type: :request do
 
       expect(response).to have_http_status(:ok)
       expect(response.parsed_body["url"]).to include("token=")
+    end
+
+    # A deed or a tax certificate names people. Working at the property is not
+    # reason enough to read it — only whoever signs for it.
+    it "refuses a member of the organization that owns the document" do
+      request_link(handle, member)
+
+      expect(response).to have_http_status(:forbidden)
     end
 
     it "refuses another organization's document" do

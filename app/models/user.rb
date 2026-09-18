@@ -25,6 +25,12 @@ class User < ApplicationRecord
     role == "admin" || organization&.admin?
   end
 
+  # The one who answers for the organization. Members work inside it; the
+  # owner is who signs for it.
+  def owner?
+    role == "owner"
+  end
+
   def touch_login!
     update_column(:last_login_at, Time.current)
   end

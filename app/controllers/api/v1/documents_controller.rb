@@ -81,10 +81,15 @@ module Api
       # Ownership comes from where the document lives, not from a field the
       # hotel writes: `ownership_document_url` is hotel-supplied, so trusting
       # it would let anyone who guesses a UUID claim someone else's paperwork.
+      #
+      # And within the organization it is the owner's alone. A deed or a tax
+      # certificate names people, so belonging to the property is not reason
+      # enough to read it — only whoever signs for the property, or the
+      # platform admin reviewing the submission.
       def may_read?(org_id)
         return true if current_user&.platform_admin?
 
-        org_id.to_i == current_user&.organization_id
+        current_user&.owner? && org_id.to_i == current_user.organization_id
       end
 
       def signed_for?(org_id, name)
